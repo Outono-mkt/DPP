@@ -34,6 +34,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# local package cache
+.npm-cache/
+
 # system
 .DS_Store
 Thumbs.db
