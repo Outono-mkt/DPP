@@ -84,5 +84,5 @@ export type SavedProductResult = {
 
 export type SavedProductSummary = Pick<
   SavedProductResult,
-  "id" | "generated_result" | "created_at"
+  "id" | "selected_format" | "generated_result" | "created_at"
 >;

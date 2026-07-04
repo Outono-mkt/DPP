@@ -11,7 +11,7 @@ import type {
   SavedProductSummary,
 } from "@/types";
 
-type Step = "access" | "onboarding" | "loading" | "result";
+type Step = "access" | "dashboard" | "creation" | "loading" | "result" | "savedResult";
 type LoadingMode = "discovery" | "product";
 
 type QuestionOption = {
@@ -131,7 +131,7 @@ export function ProductProntoFlow() {
 
         const email = data.session?.user.email ?? null;
         setUserEmail(email);
-        setStep(email ? "onboarding" : "access");
+        setStep(email ? "dashboard" : "access");
         setIsCheckingSession(false);
 
         if (email) {
@@ -204,7 +204,7 @@ export function ProductProntoFlow() {
 
       setUserEmail(data.session.user.email);
       void refreshSavedProducts();
-      setStep("onboarding");
+      setStep("dashboard");
     } catch {
       setLoginError("Nao encontramos esse acesso. Confira o e-mail e a senha enviados apos a compra.");
     } finally {
@@ -245,10 +245,10 @@ export function ProductProntoFlow() {
       });
       setDiscoveryResult(result);
       setCurrentQuestion(2);
-      setStep("onboarding");
+      setStep("creation");
     } catch {
       setFlowError("Nao conseguimos gerar sugestoes agora. Revise suas respostas e tente novamente.");
-      setStep("onboarding");
+      setStep("creation");
     }
   }
 
@@ -303,7 +303,53 @@ export function ProductProntoFlow() {
     setActiveResultId(product.id);
     setPersistenceMessage(null);
     setFlowError(null);
-    setStep("result");
+    setStep("savedResult");
+  }
+
+  function startNewProduct() {
+    if (savedProducts.length >= 2) {
+      setPersistenceMessage(
+        "Você já criou seus 2 produtos disponíveis neste acesso. Para criar outro, exclua um produto antigo ou fale comigo.",
+      );
+      return;
+    }
+
+    resetCreationFlow();
+    setStep("creation");
+  }
+
+  function backToDashboard() {
+    resetCreationFlow();
+    setStep("dashboard");
+    void refreshSavedProducts();
+  }
+
+  async function downloadSavedProductPdf(productId: string) {
+    setIsDownloadingPdf(true);
+
+    try {
+      await requestProductPdf(productId);
+    } catch {
+      setPersistenceMessage("Nao foi possivel gerar o PDF agora.");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  }
+
+  async function deleteSavedProduct(productId: string) {
+    try {
+      setPersistenceMessage(null);
+      await requestDeleteProduct(productId);
+      setSavedProducts((current) => current.filter((product) => product.id !== productId));
+
+      if (activeResultId === productId) {
+        setActiveResultId(null);
+        setGenerationResult(null);
+        setStep("dashboard");
+      }
+    } catch {
+      setPersistenceMessage("Nao foi possivel excluir este produto agora.");
+    }
   }
 
   async function downloadPdf() {
@@ -324,8 +370,7 @@ export function ProductProntoFlow() {
   }
 
   function restart() {
-    resetCreationFlow();
-    setStep("onboarding");
+    startNewProduct();
   }
 
   async function signOut() {
@@ -382,7 +427,19 @@ export function ProductProntoFlow() {
         {!isAuthenticated && (
           <AccessScreen error={loginError} isSubmitting={isLoggingIn} onEnter={enterExperience} />
         )}
-        {isAuthenticated && step === "onboarding" && (
+        {isAuthenticated && step === "dashboard" && (
+          <ProductsDashboard
+            error={historyError}
+            isDownloadingPdf={isDownloadingPdf}
+            message={persistenceMessage}
+            onCreateNew={startNewProduct}
+            onDeleteProduct={deleteSavedProduct}
+            onDownloadPdf={downloadSavedProductPdf}
+            onViewProduct={viewSavedProduct}
+            products={savedProducts}
+          />
+        )}
+        {isAuthenticated && step === "creation" && (
           <OnboardingScreen
             answers={answers}
             currentQuestion={currentQuestion}
@@ -399,20 +456,19 @@ export function ProductProntoFlow() {
         {isAuthenticated && step === "loading" && (
           <LoadingScreen mode={loadingMode} phrase={loadingPhrases[loadingIndex]} />
         )}
-        {isAuthenticated && step === "result" && (
+        {isAuthenticated && (step === "result" || step === "savedResult") && (
           <ResultScreen
             activeResultId={activeResultId}
             copiedBlock={copiedBlock}
             error={flowError}
-            historyError={historyError}
             isDownloadingPdf={isDownloadingPdf}
+            isSavedResult={step === "savedResult"}
             onCopyBlock={copyBlock}
+            onBackToDashboard={backToDashboard}
             onDownloadPdf={downloadPdf}
             onRestart={restart}
-            onViewSavedProduct={viewSavedProduct}
             persistenceMessage={persistenceMessage}
             result={generationResult}
-            savedProducts={savedProducts}
           />
         )}
       </div>
@@ -503,6 +559,17 @@ async function requestProductPdf(resultId: string) {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
+}
+
+async function requestDeleteProduct(resultId: string) {
+  const response = await fetch(`/api/product-results/${resultId}`, {
+    method: "DELETE",
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not delete product.");
+  }
 }
 
 async function getAuthHeaders() {
@@ -1023,32 +1090,148 @@ function LoadingScreen({ mode, phrase }: { mode: LoadingMode; phrase: string }) 
   );
 }
 
+function ProductsDashboard({
+  error,
+  isDownloadingPdf,
+  message,
+  onCreateNew,
+  onDeleteProduct,
+  onDownloadPdf,
+  onViewProduct,
+  products,
+}: {
+  error: string | null;
+  isDownloadingPdf: boolean;
+  message: string | null;
+  onCreateNew: () => void;
+  onDeleteProduct: (productId: string) => void;
+  onDownloadPdf: (productId: string) => void;
+  onViewProduct: (product: SavedProductSummary) => void;
+  products: SavedProductSummary[];
+}) {
+  const reachedLimit = products.length >= 2;
+
+  return (
+    <section className="w-full py-6">
+      <div className="mb-7">
+        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
+          Produto Pronto
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold leading-tight text-white">
+          Meus Produtos
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-white/64">
+          Você pode criar até 2 produtos neste acesso.
+        </p>
+      </div>
+
+      {error ? (
+        <p className="mb-4 rounded-md border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm leading-5 text-red-100">
+          {error}
+        </p>
+      ) : null}
+
+      {message ? (
+        <p className="mb-4 rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 text-sm leading-5 text-white/68">
+          {message}
+        </p>
+      ) : null}
+
+      {reachedLimit ? (
+        <p className="mb-4 rounded-md border border-accent/20 bg-accent/10 px-3 py-2 text-sm leading-5 text-white/72">
+          Você já criou seus 2 produtos disponíveis neste acesso. Para criar outro, exclua um produto antigo ou fale comigo.
+        </p>
+      ) : null}
+
+      <div className="space-y-4">
+        {products.map((product) => (
+          <article
+            className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20"
+            key={product.id}
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
+              {product.selected_format}
+            </p>
+            <h2 className="mt-2 text-xl font-semibold leading-snug text-white">
+              {product.generated_result.ideia}
+            </h2>
+            <p className="mt-2 text-xs text-white/48">
+              Criado em {formatDisplayDate(product.created_at)}
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <button
+                className="h-10 rounded-md bg-accent px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+                onClick={() => onViewProduct(product)}
+                type="button"
+              >
+                Visualizar
+              </button>
+              <button
+                className="h-10 rounded-md border border-white/12 px-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 transition hover:border-accent hover:text-accent disabled:opacity-45"
+                disabled={isDownloadingPdf}
+                onClick={() => onDownloadPdf(product.id)}
+                type="button"
+              >
+                Baixar PDF
+              </button>
+              <button
+                className="h-10 rounded-md border border-red-300/20 px-3 text-xs font-semibold uppercase tracking-[0.12em] text-red-100/80 transition hover:border-red-200 hover:text-red-50"
+                onClick={() => onDeleteProduct(product.id)}
+                type="button"
+              >
+                Excluir
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {products.length === 0 ? (
+        <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
+          <p className="text-sm leading-6 text-white/64">
+            Você ainda não criou nenhum produto. Comece pelo primeiro e salve sua estratégia aqui.
+          </p>
+        </div>
+      ) : null}
+
+      {!reachedLimit ? (
+        <button
+          className="mt-6 h-12 w-full rounded-md bg-accent px-5 text-sm font-bold uppercase tracking-[0.16em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+          onClick={onCreateNew}
+          type="button"
+        >
+          Criar novo produto
+        </button>
+      ) : null}
+    </section>
+  );
+}
+
 function ResultScreen({
   activeResultId,
   copiedBlock,
   error,
-  historyError,
   isDownloadingPdf,
+  isSavedResult,
   onCopyBlock,
+  onBackToDashboard,
   onDownloadPdf,
   onRestart,
-  onViewSavedProduct,
   persistenceMessage,
   result,
-  savedProducts,
 }: {
   activeResultId: string | null;
   copiedBlock: string | null;
   error: string | null;
-  historyError: string | null;
   isDownloadingPdf: boolean;
+  isSavedResult: boolean;
   onCopyBlock: (block: ResultBlock) => void;
+  onBackToDashboard: () => void;
   onDownloadPdf: () => void;
   onRestart: () => void;
-  onViewSavedProduct: (product: SavedProductSummary) => void;
   persistenceMessage: string | null;
   result: ProductResult | null;
-  savedProducts: SavedProductSummary[];
 }) {
   const resultBlocks = result ? productResultToBlocks(result) : [];
 
@@ -1057,19 +1240,30 @@ function ResultScreen({
       <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
-            Resultado
+            {isSavedResult ? "Produto salvo" : "Resultado"}
           </p>
           <h1 className="mt-3 text-3xl font-semibold leading-tight text-white">
             Seu produto esta desenhado.
           </h1>
         </div>
-        <button
-          className="text-left text-sm font-medium text-white/58 underline decoration-white/20 underline-offset-4 transition hover:text-accent"
-          onClick={onRestart}
-          type="button"
-        >
-          Quero recomecar com um produto diferente
-        </button>
+        <div className="flex flex-col gap-2 text-left sm:text-right">
+          <button
+            className="text-sm font-medium text-white/58 underline decoration-white/20 underline-offset-4 transition hover:text-accent"
+            onClick={onBackToDashboard}
+            type="button"
+          >
+            Voltar para Meus Produtos
+          </button>
+          {!isSavedResult ? (
+            <button
+              className="text-sm font-medium text-white/58 underline decoration-white/20 underline-offset-4 transition hover:text-accent"
+              onClick={onRestart}
+              type="button"
+            >
+              Quero recomecar com um produto diferente
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {error ? (
@@ -1161,70 +1355,6 @@ function ResultScreen({
         </p>
       ) : null}
 
-      <SavedProductsHistory
-        activeResultId={activeResultId}
-        error={historyError}
-        onViewSavedProduct={onViewSavedProduct}
-        products={savedProducts}
-      />
-    </section>
-  );
-}
-
-function SavedProductsHistory({
-  activeResultId,
-  error,
-  onViewSavedProduct,
-  products,
-}: {
-  activeResultId: string | null;
-  error: string | null;
-  onViewSavedProduct: (product: SavedProductSummary) => void;
-  products: SavedProductSummary[];
-}) {
-  return (
-    <section className="mt-8 rounded-lg border border-white/10 bg-white/[0.045] p-5">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
-        Seus produtos criados
-      </p>
-
-      {error ? <p className="mt-3 text-sm leading-6 text-white/62">{error}</p> : null}
-
-      {!error && products.length === 0 ? (
-        <p className="mt-3 text-sm leading-6 text-white/62">
-          Seus produtos salvos vao aparecer aqui.
-        </p>
-      ) : null}
-
-      {!error && products.length > 0 ? (
-        <div className="mt-4 space-y-3">
-          {products.map((product) => (
-            <article
-              className="rounded-md border border-white/10 bg-black/20 px-3 py-3"
-              key={product.id}
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold leading-5 text-white">
-                    {product.generated_result.ideia}
-                  </h3>
-                  <p className="mt-1 text-xs text-white/48">
-                    {formatDisplayDate(product.created_at)}
-                  </p>
-                </div>
-                <button
-                  className="h-10 rounded-md border border-white/12 px-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 transition hover:border-accent hover:text-accent disabled:opacity-45"
-                  disabled={activeResultId === product.id}
-                  onClick={() => onViewSavedProduct(product)}
-                  type="button"
-                >
-                  {activeResultId === product.id ? "Visualizando" : "Visualizar"}
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : null}
     </section>
   );
 }

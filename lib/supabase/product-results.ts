@@ -37,7 +37,7 @@ export async function listUserProductResults(userId: string): Promise<SavedProdu
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from("product_results")
-    .select("id, generated_result, created_at")
+    .select("id, selected_format, generated_result, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(PRODUCT_LIMIT_PER_USER);
@@ -66,6 +66,19 @@ export async function getUserProductResult(
   }
 
   return data ? normalizeSavedProductResult(data) : null;
+}
+
+export async function deleteUserProductResult(userId: string, resultId: string): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase
+    .from("product_results")
+    .delete()
+    .eq("id", resultId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function saveUserProductResult(
@@ -131,6 +144,7 @@ function normalizeSavedProductSummary(value: unknown): SavedProductSummary {
 
   return {
     id: row.id,
+    selected_format: row.selected_format,
     created_at: row.created_at,
     generated_result: normalizeProductResult(row.generated_result),
   };

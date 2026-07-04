@@ -30,3 +30,10 @@ create policy "Users can insert own product results"
   for insert
   to authenticated
   with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can delete own product results" on public.product_results;
+create policy "Users can delete own product results"
+  on public.product_results
+  for delete
+  to authenticated
+  using ((select auth.uid()) = user_id);
