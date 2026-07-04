@@ -69,6 +69,107 @@ Seguranca:
 - `SUPABASE_SERVICE_ROLE_KEY` nunca deve ser exposta no frontend.
 - A criacao futura de usuarios vindos da Hotmart deve usar a funcao server-only `createPurchasedUser`.
 
+## Configuracao de Deploy e Variaveis de Ambiente
+
+### GitHub
+
+Repositorio usado pelo projeto:
+
+```txt
+https://github.com/Outono-mkt/DPP.git
+```
+
+Branch principal:
+
+```txt
+main
+```
+
+### Configuracao local
+
+Configure as variaveis em `.env.local`, na raiz do projeto.
+
+Importante: `.env.local` nunca deve ser enviado para o GitHub. Ele ja esta listado no `.gitignore`.
+
+Variaveis obrigatorias agora:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+GEMINI_API_KEY=
+AI_PROVIDER=gemini
+```
+
+Variaveis reservadas para etapas futuras:
+
+```txt
+HOTMART_WEBHOOK_SECRET=
+OPENAI_API_KEY=
+```
+
+### Configuracao na Vercel
+
+Quando o projeto for conectado na Vercel, cadastre as mesmas variaveis em:
+
+```txt
+Project Settings -> Environment Variables
+```
+
+Variaveis que precisam existir na Vercel:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+GEMINI_API_KEY
+AI_PROVIDER
+HOTMART_WEBHOOK_SECRET
+OPENAI_API_KEY
+```
+
+Obrigatorias para o funcionamento atual:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+GEMINI_API_KEY
+AI_PROVIDER
+```
+
+Para depois:
+
+```txt
+HOTMART_WEBHOOK_SECRET
+OPENAI_API_KEY
+```
+
+### Conexao Vercel
+
+Passos recomendados:
+
+1. Importar o repositorio `https://github.com/Outono-mkt/DPP.git` na Vercel.
+2. Selecionar o projeto `DPP`.
+3. Confirmar framework `Next.js`.
+4. Confirmar branch de producao `main`.
+5. Cadastrar as variaveis de ambiente.
+6. Fazer o primeiro deploy somente depois de revisar as variaveis.
+
+### Supabase e GitHub
+
+O Supabase nao precisa necessariamente ficar conectado ao GitHub para o app funcionar.
+
+O essencial e:
+
+- variaveis corretas no ambiente local;
+- variaveis corretas na Vercel;
+- Auth configurado no painel do Supabase;
+- usuarios criados no Supabase Auth;
+- URL de producao autorizada no Supabase depois que o deploy existir.
+
+Depois do deploy, configure no Supabase a URL publica da Vercel em Authentication -> URL Configuration, incluindo Site URL e Redirect URLs quando necessario.
+
 ## Proximos passos
 
 1. Configurar as variaveis reais do Supabase no ambiente.
