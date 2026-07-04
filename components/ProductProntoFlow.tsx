@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type { ProductGenerationInput, ProductGenerationResult } from "@/types";
 
 type Step = "access" | "onboarding" | "loading" | "result";
@@ -140,6 +141,70 @@ export function ProductProntoFlow() {
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationResult, setGenerationResult] = useState<ProductGenerationResult | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  const resetFlowToAccess = useCallback(() => {
+    setAnswers(initialAnswers);
+    setCurrentQuestion(0);
+    setCopiedBlock(null);
+    setGenerationError(null);
+    setGenerationResult(null);
+    setLoginError(null);
+    setUserEmail(null);
+    setStep("access");
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkSession() {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data } = await supabase.auth.getSession();
+
+        if (!active) {
+          return;
+        }
+
+        const email = data.session?.user.email ?? null;
+        setUserEmail(email);
+        setStep(email ? "onboarding" : "access");
+        setIsCheckingSession(false);
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setIsCheckingSession(false);
+        setUserEmail(null);
+        setStep("access");
+      }
+    }
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+        const email = session?.user.email ?? null;
+        setUserEmail(email);
+
+        if (!email) {
+          resetFlowToAccess();
+        }
+      });
+
+      void checkSession();
+
+      return () => {
+        active = false;
+        subscription.subscription.unsubscribe();
+      };
+    } catch {
+      void checkSession();
+    }
+  }, [resetFlowToAccess]);
 
   useEffect(() => {
     if (step !== "loading") {
@@ -186,8 +251,29 @@ export function ProductProntoFlow() {
     setAnswers((current) => ({ ...current, [id]: value }));
   }
 
-  function enterExperience() {
-    setStep("onboarding");
+  async function enterExperience(email: string, password: string) {
+    setIsLoggingIn(true);
+    setLoginError(null);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error || !data.session?.user.email) {
+        setLoginError("Nao encontramos esse acesso. Confira o e-mail e a senha enviados apos a compra.");
+        return;
+      }
+
+      setUserEmail(data.session.user.email);
+      setStep("onboarding");
+    } catch {
+      setLoginError("Nao encontramos esse acesso. Confira o e-mail e a senha enviados apos a compra.");
+    } finally {
+      setIsLoggingIn(false);
+    }
   }
 
   function goBack() {
@@ -215,6 +301,15 @@ export function ProductProntoFlow() {
     setStep("onboarding");
   }
 
+  async function signOut() {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.signOut();
+    } finally {
+      resetFlowToAccess();
+    }
+  }
+
   async function copyBlock(block: ResultBlock) {
     const text = Array.isArray(block.content)
       ? `${block.eyebrow}\n${block.title}\n${block.content.join("\n")}`
@@ -227,11 +322,44 @@ export function ProductProntoFlow() {
     }
   }
 
+  if (isCheckingSession) {
+    return (
+      <main className="min-h-screen bg-background px-5 py-8 text-foreground">
+        <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[600px] items-center justify-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
+            Produto Pronto
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const isAuthenticated = Boolean(userEmail);
+
   return (
     <main className="min-h-screen bg-background px-5 py-8 text-foreground">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[600px] items-center">
-        {step === "access" && <AccessScreen onEnter={enterExperience} />}
-        {step === "onboarding" && (
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[600px] flex-col justify-center">
+        {isAuthenticated ? (
+          <div className="mb-6 flex items-center justify-between gap-4 text-xs text-white/50">
+            <span className="truncate">{userEmail}</span>
+            <button
+              className="font-medium text-white/60 underline decoration-white/20 underline-offset-4 transition hover:text-accent"
+              onClick={signOut}
+              type="button"
+            >
+              Sair
+            </button>
+          </div>
+        ) : null}
+
+        {!isAuthenticated && (
+          <AccessScreen
+            error={loginError}
+            isSubmitting={isLoggingIn}
+            onEnter={enterExperience}
+          />
+        )}
+        {isAuthenticated && step === "onboarding" && (
           <OnboardingScreen
             answers={answers}
             currentQuestion={currentQuestion}
@@ -241,8 +369,10 @@ export function ProductProntoFlow() {
             progress={progress}
           />
         )}
-        {step === "loading" && <LoadingScreen phrase={loadingPhrases[loadingIndex]} />}
-        {step === "result" && (
+        {isAuthenticated && step === "loading" && (
+          <LoadingScreen phrase={loadingPhrases[loadingIndex]} />
+        )}
+        {isAuthenticated && step === "result" && (
           <ResultScreen
             copiedBlock={copiedBlock}
             error={generationError}
@@ -274,7 +404,18 @@ async function generateProduct(
   return response.json() as Promise<ProductGenerationResult>;
 }
 
-function AccessScreen({ onEnter }: { onEnter: () => void }) {
+function AccessScreen({
+  error,
+  isSubmitting,
+  onEnter,
+}: {
+  error: string | null;
+  isSubmitting: boolean;
+  onEnter: (email: string, password: string) => Promise<void>;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   return (
     <section className="w-full">
       <div className="mb-10 text-center">
@@ -293,15 +434,17 @@ function AccessScreen({ onEnter }: { onEnter: () => void }) {
         className="space-y-4 rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/30"
         onSubmit={(event) => {
           event.preventDefault();
-          onEnter();
+          void onEnter(email, password);
         }}
       >
         <label className="block">
           <span className="mb-2 block text-sm font-medium text-white/78">E-mail</span>
           <input
             className="h-12 w-full rounded-md border border-white/10 bg-black/30 px-4 text-base text-white outline-none transition focus:border-accent"
+            onChange={(event) => setEmail(event.target.value)}
             placeholder="seuemail@exemplo.com"
             type="email"
+            value={email}
           />
         </label>
 
@@ -309,16 +452,25 @@ function AccessScreen({ onEnter }: { onEnter: () => void }) {
           <span className="mb-2 block text-sm font-medium text-white/78">Senha</span>
           <input
             className="h-12 w-full rounded-md border border-white/10 bg-black/30 px-4 text-base text-white outline-none transition focus:border-accent"
+            onChange={(event) => setPassword(event.target.value)}
             placeholder="Senha enviada por e-mail"
             type="password"
+            value={password}
           />
         </label>
 
+        {error ? (
+          <p className="rounded-md border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm leading-5 text-red-100">
+            {error}
+          </p>
+        ) : null}
+
         <button
-          className="h-12 w-full rounded-md bg-accent px-5 text-sm font-bold uppercase tracking-[0.16em] text-[#0d0d0d] transition hover:bg-[#d8b95d] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+          className="h-12 w-full rounded-md bg-accent px-5 text-sm font-bold uppercase tracking-[0.16em] text-[#0d0d0d] transition hover:bg-[#d8b95d] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-55"
+          disabled={isSubmitting}
           type="submit"
         >
-          Entrar
+          {isSubmitting ? "Entrando..." : "Entrar"}
         </button>
       </form>
     </section>
