@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import type { ProductGenerationInput, ProductGenerationResult } from "@/types";
+
 type Step = "access" | "onboarding" | "loading" | "result";
 
 type QuestionOption = {
@@ -130,86 +132,50 @@ const loadingPhrases = [
   "Quase pronto...",
 ];
 
-const mockResults: ResultBlock[] = [
-  {
-    eyebrow: "Seu Nicho",
-    title: "Profissionais autonomos com renda irregular",
-    content:
-      "Seu produto vai atender pessoas que trabalham por conta propria, ganham valores diferentes todo mes e querem organizar a vida financeira sem depender de planilhas complexas.",
-  },
-  {
-    eyebrow: "A Ideia do Produto",
-    title: "Guia pratico de organizacao financeira para renda variavel",
-    content:
-      "Um produto simples, direto e aplicavel em 21 dias para ajudar autonomos a controlar entradas, separar prioridades e criar uma reserva mesmo sem salario fixo.",
-  },
-  {
-    eyebrow: "Sugestoes de Nome",
-    title: "Escolha um nome ou use como inspiracao",
-    content: [
-      "Renda Irregular, Vida Organizada",
-      "Metodo do Autonomo Financeiro",
-      "Financas sem Salario Fixo",
-    ],
-  },
-  {
-    eyebrow: "A Promessa Principal",
-    title: "Organizacao financeira em 21 dias",
-    content:
-      "Em 21 dias, organize suas financas e comece a guardar dinheiro mesmo ganhando de forma irregular, sem cortar tudo e sem precisar de contador.",
-  },
-  {
-    eyebrow: "Estrutura do Conteudo",
-    title: "Cinco modulos para criar rapido",
-    content: [
-      "Modulo 1: Por que o metodo tradicional nao funciona para autonomos",
-      "Modulo 2: Como mapear sua renda irregular em 30 minutos",
-      "Modulo 3: O sistema dos 3 envelopes adaptado para renda variavel",
-      "Modulo 4: Como criar reserva mesmo nos meses ruins",
-      "Modulo 5: Plano de acao dos proximos 21 dias",
-    ],
-  },
-  {
-    eyebrow: "Preco Sugerido",
-    title: "Entre R$37 e R$67 no lancamento inicial",
-    content:
-      "Essa faixa reduz a barreira de entrada, facilita as primeiras vendas e ajuda a gerar prova social antes de subir o preco.",
-  },
-  {
-    eyebrow: "Proximo Passo",
-    title: "Seu produto esta desenhado",
-    content: [
-      "Escolha o nome que mais combina com a sua promessa.",
-      "Acesse o Dia 2 do desafio para criar o conteudo com IA.",
-      "Depois, voce vai precisar de uma pagina de vendas e anuncios para vender.",
-    ],
-  },
-];
-
 export function ProductProntoFlow() {
   const [step, setStep] = useState<Step>("access");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<OnboardingAnswers>(initialAnswers);
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationResult, setGenerationResult] = useState<ProductGenerationResult | null>(null);
 
   useEffect(() => {
     if (step !== "loading") {
       return;
     }
 
+    let active = true;
     const phraseTimer = window.setInterval(() => {
       setLoadingIndex((index) => (index + 1) % loadingPhrases.length);
     }, 900);
-    const resultTimer = window.setTimeout(() => {
-      setStep("result");
-    }, 4600);
+
+    generateProduct(answers)
+      .then((result) => {
+        if (!active) {
+          return;
+        }
+
+        setGenerationResult(result);
+        setStep("result");
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+
+        setGenerationError(
+          "Nao foi possivel gerar seu produto agora. Revise suas respostas e tente novamente.",
+        );
+        setStep("result");
+      });
 
     return () => {
+      active = false;
       window.clearInterval(phraseTimer);
-      window.clearTimeout(resultTimer);
     };
-  }, [step]);
+  }, [answers, step]);
 
   const progress = useMemo(
     () => Math.round(((currentQuestion + 1) / questions.length) * 100),
@@ -231,6 +197,8 @@ export function ProductProntoFlow() {
   function goForward() {
     if (currentQuestion === questions.length - 1) {
       setLoadingIndex(0);
+      setGenerationError(null);
+      setGenerationResult(null);
       setStep("loading");
       return;
     }
@@ -242,6 +210,8 @@ export function ProductProntoFlow() {
     setAnswers(initialAnswers);
     setCurrentQuestion(0);
     setCopiedBlock(null);
+    setGenerationError(null);
+    setGenerationResult(null);
     setStep("onboarding");
   }
 
@@ -275,13 +245,33 @@ export function ProductProntoFlow() {
         {step === "result" && (
           <ResultScreen
             copiedBlock={copiedBlock}
+            error={generationError}
             onCopyBlock={copyBlock}
             onRestart={restart}
+            result={generationResult}
           />
         )}
       </div>
     </main>
   );
+}
+
+async function generateProduct(
+  answers: ProductGenerationInput,
+): Promise<ProductGenerationResult> {
+  const response = await fetch("/api/generate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(answers),
+  });
+
+  if (!response.ok) {
+    throw new Error("Product generation failed.");
+  }
+
+  return response.json() as Promise<ProductGenerationResult>;
 }
 
 function AccessScreen({ onEnter }: { onEnter: () => void }) {
@@ -515,13 +505,19 @@ function LoadingScreen({ phrase }: { phrase: string }) {
 
 function ResultScreen({
   copiedBlock,
+  error,
   onCopyBlock,
   onRestart,
+  result,
 }: {
   copiedBlock: string | null;
+  error: string | null;
   onCopyBlock: (block: ResultBlock) => void;
   onRestart: () => void;
+  result: ProductGenerationResult | null;
 }) {
+  const resultBlocks = result ? productResultToBlocks(result) : [];
+
   return (
     <section className="w-full py-6">
       <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -542,8 +538,28 @@ function ResultScreen({
         </button>
       </div>
 
-      <div className="space-y-4">
-        {mockResults.map((block) => (
+      {error ? (
+        <div className="rounded-lg border border-red-400/20 bg-red-500/10 p-5">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-red-200">
+            Geracao interrompida
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold text-white">
+            Nao conseguimos gerar seu produto agora.
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-white/68">{error}</p>
+          <button
+            className="mt-5 h-11 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+            onClick={onRestart}
+            type="button"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      ) : null}
+
+      {!error && result ? (
+        <div className="space-y-4">
+          {resultBlocks.map((block) => (
           <article
             className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20"
             key={block.eyebrow}
@@ -578,10 +594,12 @@ function ResultScreen({
               <p className="mt-4 text-sm leading-6 text-white/68">{block.content}</p>
             )}
           </article>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : null}
 
-      <div className="sticky bottom-4 mt-6 grid gap-3 rounded-lg border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur sm:grid-cols-2">
+      {!error && result ? (
+        <div className="sticky bottom-4 mt-6 grid gap-3 rounded-lg border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur sm:grid-cols-2">
         <button
           className="h-11 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
           onClick={() => window.alert("PDF real sera implementado em uma etapa futura.")}
@@ -596,7 +614,48 @@ function ResultScreen({
         >
           Falar com Gabriel no WhatsApp
         </button>
-      </div>
+        </div>
+      ) : null}
     </section>
   );
+}
+
+function productResultToBlocks(result: ProductGenerationResult): ResultBlock[] {
+  return [
+    {
+      eyebrow: "Seu Nicho",
+      title: "Seu produto vai atender",
+      content: result.nicho,
+    },
+    {
+      eyebrow: "A Ideia do Produto",
+      title: "Seu produto sera",
+      content: result.ideia,
+    },
+    {
+      eyebrow: "Sugestoes de Nome",
+      title: "Escolha um nome ou use como inspiracao",
+      content: result.nomes,
+    },
+    {
+      eyebrow: "A Promessa Principal",
+      title: "O que seu produto promete",
+      content: result.promessa,
+    },
+    {
+      eyebrow: "Estrutura do Conteudo",
+      title: "Seu produto tera a seguinte estrutura",
+      content: result.estrutura,
+    },
+    {
+      eyebrow: "Preco Sugerido",
+      title: "Preco ideal para lancamento",
+      content: result.preco,
+    },
+    {
+      eyebrow: "Proximo Passo",
+      title: "Seu produto esta desenhado",
+      content: result.proximo_passo,
+    },
+  ];
 }

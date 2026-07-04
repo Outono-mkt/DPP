@@ -12,9 +12,9 @@ export type ProductGenerationInput = {
 export type ProductGenerationResult = {
   nicho: string;
   ideia: string;
-  nomes: string[];
+  nomes: [string, string, string];
   promessa: string;
-  estrutura: string[];
+  estrutura: [string, string, string, string, string];
   preco: string;
   proximo_passo: string;
 };
