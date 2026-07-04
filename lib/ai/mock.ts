@@ -183,5 +183,5 @@ export const mockProductResult: ProductResult = {
   proximo_passo:
     "Escolha o nome mais forte e transforme cada modulo em uma aula curta. Seu produto ja tem uma promessa clara para sair do papel.",
   cta_consultoria:
-    "Agora que a estrategia do desafio financeiro esta desenhada, Gabriel pode te ajudar a transformar isso em um produto pronto para vender, com posicionamento, oferta, pagina e plano de lancamento.",
+    "Agora que a estrategia do desafio financeiro esta desenhada, eu posso te ajudar a transformar isso em um produto pronto para vender, com posicionamento, oferta, pagina e plano de lancamento.",
 };

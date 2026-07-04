@@ -67,3 +67,22 @@ export type ProductResult = {
   proximo_passo: string;
   cta_consultoria: string;
 };
+
+export type SavedProductResult = {
+  id: string;
+  user_id: string;
+  profile: string;
+  target_audience_description: string;
+  selected_audience: string;
+  selected_pain: string;
+  selected_transformation: string;
+  experience_level: string;
+  selected_format: string;
+  generated_result: ProductResult;
+  created_at: string;
+};
+
+export type SavedProductSummary = Pick<
+  SavedProductResult,
+  "id" | "generated_result" | "created_at"
+>;

@@ -2,7 +2,59 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-let adminClient: ReturnType<typeof createClient> | null = null;
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+type Database = {
+  public: {
+    Tables: {
+      product_results: {
+        Row: {
+          id: string;
+          user_id: string;
+          profile: string;
+          target_audience_description: string;
+          selected_audience: string;
+          selected_pain: string;
+          selected_transformation: string;
+          experience_level: string;
+          selected_format: string;
+          generated_result: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          profile: string;
+          target_audience_description: string;
+          selected_audience: string;
+          selected_pain: string;
+          selected_transformation: string;
+          experience_level: string;
+          selected_format: string;
+          generated_result: Json;
+          created_at?: string;
+        };
+        Update: Partial<{
+          profile: string;
+          target_audience_description: string;
+          selected_audience: string;
+          selected_pain: string;
+          selected_transformation: string;
+          experience_level: string;
+          selected_format: string;
+          generated_result: Json;
+        }>;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
+
+let adminClient: ReturnType<typeof createClient<Database>> | null = null;
 
 export type PurchasedUserInput = {
   name: string;
@@ -20,7 +72,7 @@ export function getSupabaseAdminClient() {
   }
 
   if (!adminClient) {
-    adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    adminClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,

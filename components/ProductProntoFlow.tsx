@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import type { DiscoveryInput, DiscoveryResult, FinalGenerationInput, ProductResult } from "@/types";
+import type {
+  DiscoveryInput,
+  DiscoveryResult,
+  FinalGenerationInput,
+  ProductResult,
+  SavedProductSummary,
+} from "@/types";
 
 type Step = "access" | "onboarding" | "loading" | "result";
 type LoadingMode = "discovery" | "product";
@@ -82,6 +88,11 @@ export function ProductProntoFlow() {
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
   const [flowError, setFlowError] = useState<string | null>(null);
   const [generationResult, setGenerationResult] = useState<ProductResult | null>(null);
+  const [savedProducts, setSavedProducts] = useState<SavedProductSummary[]>([]);
+  const [activeResultId, setActiveResultId] = useState<string | null>(null);
+  const [persistenceMessage, setPersistenceMessage] = useState<string | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -95,12 +106,16 @@ export function ProductProntoFlow() {
     setCopiedBlock(null);
     setFlowError(null);
     setGenerationResult(null);
+    setActiveResultId(null);
+    setPersistenceMessage(null);
   }, []);
 
   const resetFlowToAccess = useCallback(() => {
     resetCreationFlow();
     setLoginError(null);
     setUserEmail(null);
+    setSavedProducts([]);
+    setHistoryError(null);
     setStep("access");
   }, [resetCreationFlow]);
 
@@ -118,6 +133,10 @@ export function ProductProntoFlow() {
         setUserEmail(email);
         setStep(email ? "onboarding" : "access");
         setIsCheckingSession(false);
+
+        if (email) {
+          void refreshSavedProducts();
+        }
       } catch {
         if (!active) return;
 
@@ -184,6 +203,7 @@ export function ProductProntoFlow() {
       }
 
       setUserEmail(data.session.user.email);
+      void refreshSavedProducts();
       setStep("onboarding");
     } catch {
       setLoginError("Nao encontramos esse acesso. Confira o e-mail e a senha enviados apos a compra.");
@@ -236,15 +256,70 @@ export function ProductProntoFlow() {
     setLoadingMode("product");
     setLoadingIndex(0);
     setGenerationResult(null);
+    setActiveResultId(null);
+    setPersistenceMessage(null);
     setStep("loading");
 
     try {
-      const result = await requestProductGeneration(buildFinalGenerationInput(answers, customAnswers));
+      const input = buildFinalGenerationInput(answers, customAnswers);
+      const result = await requestProductGeneration(input);
       setGenerationResult(result);
       setStep("result");
+      void saveGeneratedProduct(input, result);
     } catch {
       setFlowError("Nao foi possivel gerar seu produto agora. Revise suas respostas e tente novamente.");
       setStep("result");
+    }
+  }
+
+  async function refreshSavedProducts() {
+    try {
+      setHistoryError(null);
+      const products = await requestSavedProducts();
+      setSavedProducts(products);
+    } catch {
+      setHistoryError("Nao foi possivel carregar seus produtos criados agora.");
+    }
+  }
+
+  async function saveGeneratedProduct(input: FinalGenerationInput, result: ProductResult) {
+    try {
+      const savedProduct = await requestSaveProduct(input, result);
+      setActiveResultId(savedProduct.id);
+      setSavedProducts((current) => [savedProduct, ...current.filter((item) => item.id !== savedProduct.id)].slice(0, 2));
+      setPersistenceMessage("Produto salvo automaticamente.");
+    } catch (error) {
+      setPersistenceMessage(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel salvar este produto automaticamente.",
+      );
+      void refreshSavedProducts();
+    }
+  }
+
+  function viewSavedProduct(product: SavedProductSummary) {
+    setGenerationResult(product.generated_result);
+    setActiveResultId(product.id);
+    setPersistenceMessage(null);
+    setFlowError(null);
+    setStep("result");
+  }
+
+  async function downloadPdf() {
+    if (!activeResultId) {
+      setPersistenceMessage("Salve ou selecione um produto antes de gerar o PDF.");
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+
+    try {
+      await requestProductPdf(activeResultId);
+    } catch {
+      setPersistenceMessage("Nao foi possivel gerar o PDF agora.");
+    } finally {
+      setIsDownloadingPdf(false);
     }
   }
 
@@ -326,11 +401,18 @@ export function ProductProntoFlow() {
         )}
         {isAuthenticated && step === "result" && (
           <ResultScreen
+            activeResultId={activeResultId}
             copiedBlock={copiedBlock}
             error={flowError}
+            historyError={historyError}
+            isDownloadingPdf={isDownloadingPdf}
             onCopyBlock={copyBlock}
+            onDownloadPdf={downloadPdf}
             onRestart={restart}
+            onViewSavedProduct={viewSavedProduct}
+            persistenceMessage={persistenceMessage}
             result={generationResult}
+            savedProducts={savedProducts}
           />
         )}
       </div>
@@ -360,6 +442,81 @@ async function requestProductGeneration(input: FinalGenerationInput): Promise<Pr
   if (!response.ok) throw new Error("Product generation failed.");
 
   return response.json() as Promise<ProductResult>;
+}
+
+async function requestSavedProducts(): Promise<SavedProductSummary[]> {
+  const response = await fetch("/api/product-results", {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not load saved products.");
+  }
+
+  const payload = (await response.json()) as { results: SavedProductSummary[] };
+  return payload.results;
+}
+
+async function requestSaveProduct(
+  input: FinalGenerationInput,
+  result: ProductResult,
+): Promise<SavedProductSummary> {
+  const response = await fetch("/api/product-results", {
+    method: "POST",
+    headers: {
+      ...(await getAuthHeaders()),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...input,
+      generatedResult: result,
+    }),
+  });
+
+  const payload = (await response.json()) as {
+    error?: string;
+    result?: SavedProductSummary;
+  };
+
+  if (!response.ok || !payload.result) {
+    throw new Error(payload.error ?? "Nao foi possivel salvar este produto automaticamente.");
+  }
+
+  return payload.result;
+}
+
+async function requestProductPdf(resultId: string) {
+  const response = await fetch(`/api/product-results/${resultId}/pdf`, {
+    headers: await getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not generate PDF.");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `produto-pronto-${resultId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+async function getAuthHeaders() {
+  const supabase = getSupabaseBrowserClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    throw new Error("Missing user session.");
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
 }
 
 function buildFinalGenerationInput(
@@ -867,17 +1024,31 @@ function LoadingScreen({ mode, phrase }: { mode: LoadingMode; phrase: string }) 
 }
 
 function ResultScreen({
+  activeResultId,
   copiedBlock,
   error,
+  historyError,
+  isDownloadingPdf,
   onCopyBlock,
+  onDownloadPdf,
   onRestart,
+  onViewSavedProduct,
+  persistenceMessage,
   result,
+  savedProducts,
 }: {
+  activeResultId: string | null;
   copiedBlock: string | null;
   error: string | null;
+  historyError: string | null;
+  isDownloadingPdf: boolean;
   onCopyBlock: (block: ResultBlock) => void;
+  onDownloadPdf: () => void;
   onRestart: () => void;
+  onViewSavedProduct: (product: SavedProductSummary) => void;
+  persistenceMessage: string | null;
   result: ProductResult | null;
+  savedProducts: SavedProductSummary[];
 }) {
   const resultBlocks = result ? productResultToBlocks(result) : [];
 
@@ -963,7 +1134,7 @@ function ResultScreen({
                   onClick={() => window.alert("WhatsApp sera conectado em uma etapa futura.")}
                   type="button"
                 >
-                  Quero construir esse produto com o Gabriel
+                  Quero construir esse produto com você
                 </button>
               ) : null}
             </article>
@@ -975,15 +1146,95 @@ function ResultScreen({
         <div className="sticky bottom-4 mt-6 rounded-lg border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur">
           <button
             className="h-11 w-full rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
-            onClick={() => window.alert("PDF real sera implementado em uma etapa futura.")}
+            disabled={!activeResultId || isDownloadingPdf}
+            onClick={onDownloadPdf}
             type="button"
           >
-            Salvar meu resultado em PDF
+            {isDownloadingPdf ? "Gerando PDF..." : "Salvar meu resultado em PDF"}
           </button>
+        </div>
+      ) : null}
+
+      {persistenceMessage ? (
+        <p className="mt-4 rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 text-sm leading-5 text-white/68">
+          {persistenceMessage}
+        </p>
+      ) : null}
+
+      <SavedProductsHistory
+        activeResultId={activeResultId}
+        error={historyError}
+        onViewSavedProduct={onViewSavedProduct}
+        products={savedProducts}
+      />
+    </section>
+  );
+}
+
+function SavedProductsHistory({
+  activeResultId,
+  error,
+  onViewSavedProduct,
+  products,
+}: {
+  activeResultId: string | null;
+  error: string | null;
+  onViewSavedProduct: (product: SavedProductSummary) => void;
+  products: SavedProductSummary[];
+}) {
+  return (
+    <section className="mt-8 rounded-lg border border-white/10 bg-white/[0.045] p-5">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
+        Seus produtos criados
+      </p>
+
+      {error ? <p className="mt-3 text-sm leading-6 text-white/62">{error}</p> : null}
+
+      {!error && products.length === 0 ? (
+        <p className="mt-3 text-sm leading-6 text-white/62">
+          Seus produtos salvos vao aparecer aqui.
+        </p>
+      ) : null}
+
+      {!error && products.length > 0 ? (
+        <div className="mt-4 space-y-3">
+          {products.map((product) => (
+            <article
+              className="rounded-md border border-white/10 bg-black/20 px-3 py-3"
+              key={product.id}
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold leading-5 text-white">
+                    {product.generated_result.ideia}
+                  </h3>
+                  <p className="mt-1 text-xs text-white/48">
+                    {formatDisplayDate(product.created_at)}
+                  </p>
+                </div>
+                <button
+                  className="h-10 rounded-md border border-white/12 px-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 transition hover:border-accent hover:text-accent disabled:opacity-45"
+                  disabled={activeResultId === product.id}
+                  onClick={() => onViewSavedProduct(product)}
+                  type="button"
+                >
+                  {activeResultId === product.id ? "Visualizando" : "Visualizar"}
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       ) : null}
     </section>
   );
+}
+
+function formatDisplayDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function productResultToBlocks(result: ProductResult): ResultBlock[] {
@@ -1024,7 +1275,7 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
     { eyebrow: "Preco Sugerido", title: "Preco ideal para lancamento", content: result.preco },
     { eyebrow: "Proximos Passos", title: "Seu produto esta desenhado", content: result.proximo_passo },
     {
-      eyebrow: "Construir com Gabriel",
+      eyebrow: "Construir comigo",
       title: "Transforme a estrategia em produto real",
       content: result.cta_consultoria,
       action: "whatsapp",

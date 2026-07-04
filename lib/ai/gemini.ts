@@ -212,7 +212,7 @@ Retorne somente JSON valido neste formato exato:
   "estrutura": ["etapa personalizada seguindo exatamente a metodologia do formato escolhido"],
   "preco": "faixa de preco sugerida com justificativa em uma linha",
   "proximo_passo": "proximas acoes praticas para comecar agora",
-  "cta_consultoria": "CTA contextual para falar com Gabriel e construir esse produto"
+  "cta_consultoria": "CTA contextual em primeira pessoa para falar comigo e construir esse produto"
 }
 
 Regras:
@@ -240,7 +240,7 @@ Regras:
 - Nao crie perfis iguais com nomes diferentes.
 - Gere 5 frases que o cliente real diria em Instagram, WhatsApp, YouTube ou conversa com cliente.
 - As frases devem soar reais e nascer das respostas do usuario, nao de frases genericas prontas.
-- O CTA de consultoria deve adaptar esta ideia ao produto gerado: agora que a estrategia esta desenhada, Gabriel pode ajudar a transformar isso em um produto pronto para vender, com posicionamento, oferta, pagina e plano de lancamento.
+- O CTA de consultoria deve adaptar esta ideia ao produto gerado em primeira pessoa: agora que a estrategia esta desenhada, eu posso ajudar a transformar isso em um produto pronto para vender, com posicionamento, oferta, pagina e plano de lancamento.
 - Responda apenas com JSON. Sem texto adicional.`;
 }
 
