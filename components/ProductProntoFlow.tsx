@@ -580,7 +580,7 @@ function renderOnboardingStep({
         helper="Escolha o caminho com mais potencial para o seu produto."
         items={(discoveryResult?.publicos ?? []).map((item) => ({
           title: item.titulo,
-          description: item.motivo,
+          description: `${item.descricao} ${item.porque_escolher}`,
           value: item.titulo,
         }))}
         marker={CUSTOM_AUDIENCE}
@@ -601,7 +601,7 @@ function renderOnboardingStep({
         helper="A dor certa deixa a promessa do produto mais clara e desejada."
         items={(discoveryResult?.dores ?? []).map((item) => ({
           title: item.titulo,
-          description: item.explicacao,
+          description: `${item.descricao} Urgencia: ${item.urgencia}. Frase real: "${item.frases_reais[0]}"`,
           value: item.titulo,
         }))}
         marker={CUSTOM_PAIN}
@@ -622,7 +622,7 @@ function renderOnboardingStep({
         helper="Escolha o resultado que seu aluno mais gostaria de conquistar."
         items={(discoveryResult?.transformacoes ?? []).map((item) => ({
           title: item.titulo,
-          description: item.resultado,
+          description: `${item.descricao} Resultado final: ${item.resultado_final}`,
           value: item.titulo,
         }))}
         marker={CUSTOM_TRANSFORMATION}
@@ -648,10 +648,10 @@ function renderOnboardingStep({
 
   return (
     <CardStep
-      helper="Escolha o formato mais natural para criar rapido e entregar valor."
+      helper="Analisando seu conhecimento e seu objetivo, estes sao os formatos com melhor encaixe para comecar rapido sem perder estrategia."
       items={(discoveryResult?.formatos ?? []).map((item) => ({
         title: item.nome,
-        description: item.motivo,
+        description: `${item.motivo} ${item.porque_esse_formato}`,
         value: item.nome,
       }))}
       onChange={(value) => onUpdateAnswer("selectedFormat", value)}

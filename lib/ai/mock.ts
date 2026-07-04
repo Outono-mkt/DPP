@@ -3,94 +3,120 @@
 import type { DiscoveryResult, ProductResult } from "@/types";
 
 export const mockDiscoveryResult: DiscoveryResult = {
-  especialidades: [
-    {
-      titulo: "Organizacao financeira para autonomos",
-      descricao:
-        "Transformar renda variavel em um plano simples de controle, reserva e previsibilidade.",
-    },
-    {
-      titulo: "Rotina pratica de dinheiro",
-      descricao:
-        "Ensinar pessoas ocupadas a cuidar do dinheiro em poucos minutos por semana.",
-    },
-    {
-      titulo: "Primeiros passos para sair das dividas",
-      descricao:
-        "Criar um caminho direto para quem se sente perdido e precisa recuperar controle.",
-    },
-  ],
   publicos: [
     {
       titulo: "Profissionais autonomos com renda irregular",
-      motivo:
+      descricao:
+        "Pessoas que prestam servicos, vendem por demanda ou recebem em datas diferentes todos os meses.",
+      porque_escolher:
         "Eles sentem a dor da instabilidade todo mes e precisam de um metodo simples, nao de teoria financeira.",
     },
     {
       titulo: "Prestadores de servico que misturam contas pessoais e profissionais",
-      motivo:
+      descricao:
+        "Profissionais que recebem no CPF ou em uma unica conta e nao sabem separar custo, lucro e retirada.",
+      porque_escolher:
         "Esse publico costuma trabalhar muito, mas perde clareza sobre lucro, custos e retirada.",
     },
     {
       titulo: "Pessoas endividadas que querem recomecar sem planilhas complexas",
-      motivo:
+      descricao:
+        "Pessoas que ja tentaram se organizar, mas travam quando precisam lidar com numeros e prioridades.",
+      porque_escolher:
         "A urgencia e alta e a promessa pode ser bem concreta: organizar, priorizar e agir.",
     },
   ],
   dores: [
     {
       titulo: "Nao saber quanto pode gastar",
-      explicacao:
+      descricao:
         "A pessoa vive apagando incendio porque nao tem uma regra clara para decidir o que entra, sai e fica guardado.",
+      nivel_consciencia: "Sabe que esta sem controle, mas ainda acha que o problema e ganhar pouco.",
+      urgencia: "Alta, porque afeta decisoes de compra, contas do mes e ansiedade diaria.",
+      frases_reais: [
+        "Eu recebo, pago umas coisas e quando vejo ja acabou.",
+        "Tenho medo de gastar e depois faltar para uma conta importante.",
+        "Nunca sei se posso comprar alguma coisa ou se estou me enganando.",
+      ],
     },
     {
       titulo: "Medo dos meses fracos",
-      explicacao:
+      descricao:
         "Quando a renda cai, tudo vira ansiedade porque nao existe reserva nem previsao minima.",
+      nivel_consciencia: "Entende que a renda varia, mas nao sabe criar uma regra para se proteger.",
+      urgencia: "Alta, principalmente para quem depende do proprio trabalho para pagar custos fixos.",
+      frases_reais: [
+        "Quando entra menos cliente eu entro em desespero.",
+        "Um mes bom nao compensa a inseguranca do mes seguinte.",
+        "Eu queria saber quanto guardar quando recebo mais.",
+      ],
     },
     {
       titulo: "Misturar dinheiro do trabalho com dinheiro pessoal",
-      explicacao:
+      descricao:
         "Sem separar as contas, ela acha que vendeu bem, mas termina o mes sem saber para onde foi o dinheiro.",
+      nivel_consciencia: "Percebe a confusao, mas ainda nao tem um jeito simples de separar as entradas.",
+      urgencia: "Media alta, porque impede crescimento e faz o profissional precificar mal.",
+      frases_reais: [
+        "Eu nao sei se o dinheiro que entrou e meu ou do negocio.",
+        "As vezes acho que lucrei, mas depois aparece um custo que esqueci.",
+        "Uso a mesma conta para tudo e me perco completamente.",
+      ],
     },
     {
       titulo: "Comecar e abandonar o controle financeiro",
-      explicacao:
+      descricao:
         "Metodos complicados geram empolgacao por poucos dias e depois viram mais uma frustracao.",
+      nivel_consciencia: "Ja tentou resolver, mas acredita que organizacao financeira e complicada demais.",
+      urgencia: "Media, mas cresce quando a pessoa se cansa de repetir o mesmo ciclo.",
+      frases_reais: [
+        "Eu baixo planilha, uso dois dias e abandono.",
+        "Nao tenho paciencia para ficar categorizando tudo.",
+        "Queria algo que eu conseguisse manter na vida real.",
+      ],
     },
   ],
   transformacoes: [
     {
       titulo: "Clareza financeira em 7 dias",
-      resultado:
+      descricao: "Organizar entradas, saidas e prioridades em uma rotina simples.",
+      resultado_final:
         "A pessoa entende exatamente para onde o dinheiro vai e qual e o primeiro ajuste a fazer.",
     },
     {
       titulo: "Plano simples para renda variavel",
-      resultado:
+      descricao: "Criar uma regra de distribuicao do dinheiro que funcione mesmo com meses diferentes.",
+      resultado_final:
         "Ela passa a organizar ganhos irregulares com uma regra facil de repetir todo mes.",
     },
     {
       titulo: "Primeira reserva sem sofrimento",
-      resultado:
+      descricao: "Montar um plano realista para comecar uma reserva sem cortar tudo.",
+      resultado_final:
         "Ela cria um plano realista para guardar dinheiro mesmo quando a renda oscila.",
     },
   ],
   formatos: [
     {
-      nome: "Aulas curtas gravadas com checklist",
+      nome: "Curso gravado",
       motivo:
         "E rapido de produzir, facil de consumir e combina com uma transformacao pratica de poucos dias.",
+      porque_esse_formato:
+        "Permite ensinar o metodo passo a passo e vender de forma escalavel sem depender de agenda individual.",
     },
     {
-      nome: "Guia PDF com templates",
+      nome: "Ebook",
       motivo:
         "Funciona bem quando o usuario precisa de exemplos prontos e aplicacao imediata.",
+      porque_esse_formato:
+        "Organiza o raciocinio em capitulos simples e pode ser criado rapidamente como primeira oferta.",
     },
     {
-      nome: "Desafio de 5 dias",
+      nome: "Desafio",
       motivo:
         "Cria senso de progresso e ajuda o aluno a executar uma etapa por dia sem travar.",
+      porque_esse_formato:
+        "Combina com uma promessa de execucao rapida, com pequenas tarefas diarias e resultado visivel.",
     },
   ],
 };
@@ -146,11 +172,11 @@ export const mockProductResult: ProductResult = {
     "Queria guardar dinheiro, mas minha renda muda todo mes.",
   ],
   estrutura: [
-    "Modulo 1: Como enxergar sua renda real sem se assustar",
-    "Modulo 2: Separando dinheiro pessoal e profissional em uma rotina simples",
-    "Modulo 3: A regra dos percentuais para renda variavel",
-    "Modulo 4: Como atravessar meses fracos com mais previsibilidade",
-    "Modulo 5: Seu plano financeiro dos proximos 30 dias",
+    "Dia 1: Diagnostico da renda real e dos principais vazamentos",
+    "Dia 2: Organizacao das contas pessoais e profissionais",
+    "Dia 3: Regra simples para distribuir entradas irregulares",
+    "Dia 4: Plano para atravessar meses fracos com mais previsibilidade",
+    "Dia 5: Checklist financeiro dos proximos 30 dias",
   ],
   preco:
     "Entre R$37 e R$67 no lancamento inicial, uma faixa baixa para validar a promessa e gerar as primeiras vendas.",

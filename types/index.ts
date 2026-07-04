@@ -6,25 +6,27 @@ export type DiscoveryInput = {
 };
 
 export type DiscoveryResult = {
-  especialidades: Array<{
-    titulo: string;
-    descricao: string;
-  }>;
   publicos: Array<{
     titulo: string;
-    motivo: string;
+    descricao: string;
+    porque_escolher: string;
   }>;
   dores: Array<{
     titulo: string;
-    explicacao: string;
+    descricao: string;
+    nivel_consciencia: string;
+    urgencia: string;
+    frases_reais: [string, string, string];
   }>;
   transformacoes: Array<{
     titulo: string;
-    resultado: string;
+    descricao: string;
+    resultado_final: string;
   }>;
   formatos: Array<{
     nome: string;
     motivo: string;
+    porque_esse_formato: string;
   }>;
 };
 
@@ -60,7 +62,7 @@ export type ProductResult = {
     },
   ];
   frases_cliente: [string, string, string, string, string];
-  estrutura: [string, string, string, string, string];
+  estrutura: string[];
   preco: string;
   proximo_passo: string;
   cta_consultoria: string;

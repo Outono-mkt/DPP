@@ -1,5 +1,9 @@
 ﻿import "server-only";
 
+import {
+  formatMethodologyForPrompt,
+  getProductFormatMethodology,
+} from "@/lib/product-engine/helpers";
 import type { DiscoveryInput, DiscoveryResult, FinalGenerationInput, ProductResult } from "@/types";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -38,7 +42,12 @@ export async function generateProductWithGemini(
     throw new Error("GEMINI_API_KEY is not configured.");
   }
 
-  const response = await callGemini(apiKey, buildProductPrompt(input), 0.7);
+  const productFormat = getProductFormatMethodology(input.selectedFormat);
+  const response = await callGemini(
+    apiKey,
+    buildProductPrompt(input, formatMethodologyForPrompt(productFormat)),
+    0.7,
+  );
 
   if (!response.ok) {
     throw new Error("Gemini product request failed.");
@@ -87,42 +96,64 @@ RESPOSTAS DO USUARIO:
 
 Retorne somente JSON valido neste formato exato:
 {
-  "especialidades": [
-    { "titulo": "", "descricao": "" },
-    { "titulo": "", "descricao": "" },
-    { "titulo": "", "descricao": "" }
-  ],
   "publicos": [
-    { "titulo": "", "motivo": "" },
-    { "titulo": "", "motivo": "" },
-    { "titulo": "", "motivo": "" }
+    { "titulo": "", "descricao": "", "porque_escolher": "" },
+    { "titulo": "", "descricao": "", "porque_escolher": "" },
+    { "titulo": "", "descricao": "", "porque_escolher": "" }
   ],
   "dores": [
-    { "titulo": "", "explicacao": "" },
-    { "titulo": "", "explicacao": "" },
-    { "titulo": "", "explicacao": "" },
-    { "titulo": "", "explicacao": "" }
+    {
+      "titulo": "",
+      "descricao": "",
+      "nivel_consciencia": "",
+      "urgencia": "",
+      "frases_reais": ["", "", ""]
+    },
+    {
+      "titulo": "",
+      "descricao": "",
+      "nivel_consciencia": "",
+      "urgencia": "",
+      "frases_reais": ["", "", ""]
+    },
+    {
+      "titulo": "",
+      "descricao": "",
+      "nivel_consciencia": "",
+      "urgencia": "",
+      "frases_reais": ["", "", ""]
+    },
+    {
+      "titulo": "",
+      "descricao": "",
+      "nivel_consciencia": "",
+      "urgencia": "",
+      "frases_reais": ["", "", ""]
+    }
   ],
   "transformacoes": [
-    { "titulo": "", "resultado": "" },
-    { "titulo": "", "resultado": "" },
-    { "titulo": "", "resultado": "" }
+    { "titulo": "", "descricao": "", "resultado_final": "" },
+    { "titulo": "", "descricao": "", "resultado_final": "" },
+    { "titulo": "", "descricao": "", "resultado_final": "" }
   ],
   "formatos": [
-    { "nome": "", "motivo": "" },
-    { "nome": "", "motivo": "" },
-    { "nome": "", "motivo": "" }
+    { "nome": "", "motivo": "", "porque_esse_formato": "" },
+    { "nome": "", "motivo": "", "porque_esse_formato": "" },
+    { "nome": "", "motivo": "", "porque_esse_formato": "" }
   ]
 }
 
 Regras:
-- Retornar 3 especialidades.
 - Retornar 3 publicos.
 - Retornar 4 dores.
 - Retornar 3 transformacoes.
 - Retornar 3 formatos.
+- Cada dor precisa ser extremamente especifica, mostrando como aparece, o que a pessoa vive e o que normalmente ela diz.
+- Nao use dores genericas como "falta de tempo", "falta de clareza" ou "falta de conhecimento" sem detalhar a situacao real.
+- Cada dor deve ter 3 frases reais que parecam comentarios de Instagram, WhatsApp, YouTube ou conversa com cliente.
 - Para formatos, considere internamente: mentoria em grupo, mentoria individual, curso gravado, curso ao vivo, ebook, template ou kit pronto, consultoria, comunidade paga, workshop, servico feito para o cliente, agente GPT, mini-SaaS ou ferramenta web, planilha pronta, checklist e desafio.
 - Exiba apenas os 3 formatos mais adequados para execucao rapida, baixa friccao e clareza de venda.
+- Em cada formato, explique por que esse formato combina com o conhecimento, publico e objetivo do usuario.
 - Considere oportunidades de mercado provaveis a partir do contexto informado, sem afirmar que fez pesquisa real.
 - As sugestoes devem ser especificas para as respostas do usuario.
 - Nao use exemplos genericos.
@@ -130,7 +161,7 @@ Regras:
 - Responda apenas com JSON valido. Sem texto adicional.`;
 }
 
-export function buildProductPrompt(input: FinalGenerationInput): string {
+export function buildProductPrompt(input: FinalGenerationInput, formatMethodology: string): string {
   return `Voce e um estrategista de infoprodutos especialista em criar estrategias iniciais de produto para o mercado brasileiro.
 
 Com base nas informacoes abaixo, crie uma Estrategia Inicial de Produto simples, concreta e viavel para essa pessoa vender em poucos dias.
@@ -143,6 +174,9 @@ INFORMACOES DO USUARIO:
 - Transformacao escolhida: ${input.selectedTransformation}
 - Nivel de experiencia com infoprodutos: ${input.experienceLevel}
 - Formato escolhido: ${input.selectedFormat}
+
+METODOLOGIA DO FORMATO ESCOLHIDO DEFINIDA PELO SISTEMA:
+${formatMethodology}
 
 Retorne somente JSON valido neste formato exato:
 {
@@ -175,7 +209,7 @@ Retorne somente JSON valido neste formato exato:
     "frase real 4",
     "frase real 5"
   ],
-  "estrutura": ["modulo 1", "modulo 2", "modulo 3", "modulo 4", "modulo 5"],
+  "estrutura": ["etapa personalizada seguindo exatamente a metodologia do formato escolhido"],
   "preco": "faixa de preco sugerida com justificativa em uma linha",
   "proximo_passo": "proximas acoes praticas para comecar agora",
   "cta_consultoria": "CTA contextual para falar com Gabriel e construir esse produto"
@@ -185,6 +219,16 @@ Regras:
 - Seja especifico, nunca generico.
 - Use linguagem simples e direta.
 - O produto deve ser viavel para criar em poucos dias.
+- A estrutura do produto deve obrigatoriamente seguir a metodologia do formato escolhido.
+- Use a quantidade ideal, o tipo de estrutura e os nomes das etapas definidos pelo sistema.
+- A IA deve apenas personalizar os titulos das etapas conforme nicho, dor e transformacao.
+- Nao transforme Ebook em Curso.
+- Nao transforme Mentoria em Ebook.
+- Nao transforme Workshop em Curso.
+- Nao crie modulos quando o formato utiliza encontros.
+- Nao crie capitulos quando o formato utiliza funcionalidades.
+- Nao crie uma estrutura completamente nova.
+- Respeite completamente o formato.
 - A oportunidade deve explicar em 2 ou 3 linhas por que essa ideia faz sentido, sem dizer que foi feita pesquisa real de mercado.
 - A promessa deve ter resultado concreto e preferir numero, prazo ou situacao especifica.
 - A promessa nao deve usar ponto de exclamacao.
@@ -232,11 +276,10 @@ function parseDiscoveryResult(text: string): DiscoveryResult {
   }
 
   if (
-    !isObjectArray(parsed.especialidades, 3, ["titulo", "descricao"]) ||
-    !isObjectArray(parsed.publicos, 3, ["titulo", "motivo"]) ||
-    !isObjectArray(parsed.dores, 4, ["titulo", "explicacao"]) ||
-    !isObjectArray(parsed.transformacoes, 3, ["titulo", "resultado"]) ||
-    !isObjectArray(parsed.formatos, 3, ["nome", "motivo"])
+    !isObjectArray(parsed.publicos, 3, ["titulo", "descricao", "porque_escolher"]) ||
+    !isPainArray(parsed.dores) ||
+    !isObjectArray(parsed.transformacoes, 3, ["titulo", "descricao", "resultado_final"]) ||
+    !isObjectArray(parsed.formatos, 3, ["nome", "motivo", "porque_esse_formato"])
   ) {
     throw new Error("Gemini discovery response does not match the expected schema.");
   }
@@ -260,7 +303,7 @@ function parseProductResult(text: string): ProductResult {
     !isTenStringArray(parsed.beneficios) ||
     !isObjectArray(parsed.perfis_clientes, 3, ["titulo", "descricao"]) ||
     !isFiveStringArray(parsed.frases_cliente) ||
-    !isFiveStringArray(parsed.estrutura) ||
+    !isStringArray(parsed.estrutura) ||
     typeof parsed.preco !== "string" ||
     typeof parsed.proximo_passo !== "string" ||
     typeof parsed.cta_consultoria !== "string"
@@ -312,6 +355,31 @@ function isObjectArray(value: unknown, length: number, keys: string[]) {
       keys.every((key) => typeof (item as Record<string, unknown>)[key] === "string"),
     )
   );
+}
+
+function isPainArray(value: unknown) {
+  return (
+    Array.isArray(value) &&
+    value.length === 4 &&
+    value.every((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        return false;
+      }
+
+      const pain = item as Record<string, unknown>;
+      return (
+        typeof pain.titulo === "string" &&
+        typeof pain.descricao === "string" &&
+        typeof pain.nivel_consciencia === "string" &&
+        typeof pain.urgencia === "string" &&
+        isThreeStringArray(pain.frases_reais)
+      );
+    })
+  );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.length > 0 && value.every(isString);
 }
 
 function isThreeStringArray(value: unknown): value is [string, string, string] {
