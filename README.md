@@ -1,4 +1,4 @@
-# Produto Pronto
+﻿# Produto Pronto
 
 Arquitetura inicial do projeto Produto Pronto.
 
@@ -9,7 +9,7 @@ Esta etapa prepara a base tecnica da aplicacao, sem implementar login, onboardin
 - Next.js com App Router.
 - TypeScript.
 - Tailwind CSS.
-- Providers de IA preparados para Gemini agora e OpenAI futuramente.
+- Providers de IA preparados para Gemini agora e OpenAI futuramente.\n- Arquitetura de IA em duas etapas: descoberta estrategica e geracao do produto final.
 - Supabase Auth para controle de acesso com e-mail e senha.
 - Supabase reservado para persistencia futura.
 - Hotmart reservado para validacao futura de compras via webhook.
@@ -23,10 +23,7 @@ app/
   page.tsx
 components/
 lib/
-  ai/
-    gemini.ts
-    index.ts
-    openai.ts
+  ai/\n    gemini.ts\n    index.ts\n    mock.ts\n    openai.ts
   hotmart/
     index.ts
   supabase/
@@ -52,6 +49,15 @@ Variaveis previstas:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `HOTMART_WEBHOOK_SECRET`
 
+
+## Arquitetura de IA
+
+A criacao do produto usa duas chamadas de backend:
+
+1. `POST /api/discovery`: recebe `profile` e `targetAudienceDescription` e retorna sugestoes de publicos, dores, transformacoes e formatos.
+2. `POST /api/generate`: recebe as escolhas finais do usuario e retorna os 7 blocos do produto pronto.
+
+O frontend nunca acessa chaves de IA diretamente. Gemini e usado quando `AI_PROVIDER=gemini` e `GEMINI_API_KEY` existe. Se a chave nao estiver configurada, o sistema usa mock local. OpenAI continua como placeholder para uma etapa futura.
 ## Supabase Auth
 
 Configure no Supabase:
@@ -178,3 +184,4 @@ Depois do deploy, configure no Supabase a URL publica da Vercel em Authenticatio
 4. Criar futuramente o endpoint `/api/hotmart/webhook`.
 5. Integrar a Hotmart para chamar `createPurchasedUser` apos compra aprovada.
 6. Implementar persistencia de resultados quando o modelo de dados estiver definido.
+

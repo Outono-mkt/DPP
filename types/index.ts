@@ -1,15 +1,44 @@
-export type AiProvider = "gemini" | "openai";
+﻿export type AiProvider = "gemini" | "openai";
 
-export type ProductGenerationInput = {
-  skill: string;
-  audience: string;
-  audiencePain: string;
-  transformation: string;
-  preferredFormat: string;
-  experienceLevel: string;
+export type DiscoveryInput = {
+  profile: string;
+  targetAudienceDescription: string;
 };
 
-export type ProductGenerationResult = {
+export type DiscoveryResult = {
+  especialidades: Array<{
+    titulo: string;
+    descricao: string;
+  }>;
+  publicos: Array<{
+    titulo: string;
+    motivo: string;
+  }>;
+  dores: Array<{
+    titulo: string;
+    explicacao: string;
+  }>;
+  transformacoes: Array<{
+    titulo: string;
+    resultado: string;
+  }>;
+  formatos: Array<{
+    nome: string;
+    motivo: string;
+  }>;
+};
+
+export type FinalGenerationInput = {
+  profile: string;
+  targetAudienceDescription: string;
+  selectedAudience: string;
+  selectedPain: string;
+  selectedTransformation: string;
+  experienceLevel: string;
+  selectedFormat: string;
+};
+
+export type ProductResult = {
   nicho: string;
   ideia: string;
   nomes: [string, string, string];

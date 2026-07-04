@@ -1,34 +1,32 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import type { ProductGenerationInput, ProductGenerationResult } from "@/types";
+import type { DiscoveryInput, DiscoveryResult, FinalGenerationInput, ProductResult } from "@/types";
 
 type Step = "access" | "onboarding" | "loading" | "result";
+type LoadingMode = "discovery" | "product";
 
 type QuestionOption = {
   label: string;
   value: string;
 };
 
-type Question = {
-  id: keyof OnboardingAnswers;
-  title: string;
-  helper: string;
-  kind: "text" | "options";
-  maxLength?: number;
-  examples?: string[];
-  options?: QuestionOption[];
+type OnboardingAnswers = {
+  profile: string;
+  targetAudienceDescription: string;
+  selectedAudience: string;
+  selectedPain: string;
+  selectedTransformation: string;
+  experienceLevel: string;
+  selectedFormat: string;
 };
 
-type OnboardingAnswers = {
-  skill: string;
+type CustomAnswers = {
   audience: string;
-  audiencePain: string;
+  pain: string;
   transformation: string;
-  preferredFormat: string;
-  experienceLevel: string;
 };
 
 type ResultBlock = {
@@ -37,93 +35,32 @@ type ResultBlock = {
   content: string | string[];
 };
 
-const questions: Question[] = [
-  {
-    id: "skill",
-    title: "O que voce sabe fazer bem?",
-    helper:
-      "Pode ser uma habilidade profissional, algo que voce aprendeu na vida ou um problema que voce ja resolveu.",
-    kind: "text",
-    maxLength: 150,
-    examples: [
-      "Organizar financas pessoais",
-      "Ensinar ingles para criancas",
-      "Gestao de pequenas empresas",
-      "Cuidar da saude e bem-estar",
-    ],
-  },
-  {
-    id: "audience",
-    title: "Para quem voce quer ajudar?",
-    helper: "Escolha a opcao que mais se aproxima do publico que voce quer atender.",
-    kind: "options",
-    options: [
-      { label: "Maes", value: "Maes" },
-      { label: "Profissionais que querem renda extra", value: "Profissionais que querem renda extra" },
-      { label: "Pequenos empreendedores", value: "Pequenos empreendedores" },
-      { label: "Pessoas endividadas", value: "Pessoas endividadas" },
-      { label: "Jovens iniciantes", value: "Jovens iniciantes" },
-      { label: "Outro", value: "Outro" },
-    ],
-  },
-  {
-    id: "audiencePain",
-    title: "Qual e a maior dor dessa pessoa?",
-    helper: "O que ela perde, sofre ou teme por nao ter o conhecimento que voce tem?",
-    kind: "text",
-    maxLength: 200,
-    examples: [
-      "Gasta mais do que ganha e nao consegue sair das dividas",
-      "Quer empreender mas nao sabe por onde comecar",
-      "Nao consegue aprender ingles com metodos tradicionais",
-    ],
-  },
-  {
-    id: "transformation",
-    title: "Qual transformacao voce entrega?",
-    helper: "Complete a frase: depois de aprender comigo, meu cliente vai conseguir...",
-    kind: "text",
-    maxLength: 200,
-    examples: [
-      "Organizar as financas e guardar dinheiro todo mes",
-      "Criar e vender o primeiro produto digital",
-      "Falar ingles no trabalho sem ter vergonha",
-    ],
-  },
-  {
-    id: "preferredFormat",
-    title: "Como voce prefere entregar esse conhecimento?",
-    helper: "Escolha o formato mais natural para o seu produto.",
-    kind: "options",
-    options: [
-      { label: "Video aulas gravadas", value: "Video aulas gravadas" },
-      { label: "E-book ou guia em PDF", value: "E-book ou guia em PDF" },
-      { label: "Checklist + templates prontos", value: "Checklist + templates prontos" },
-      { label: "Ferramenta ou sistema", value: "Ferramenta ou sistema" },
-      { label: "Deixa a IA decidir", value: "Deixa a IA decidir o melhor formato" },
-    ],
-  },
-  {
-    id: "experienceLevel",
-    title: "Qual e o seu nivel de experiencia com infoprodutos?",
-    helper: "Isso ajuda a ajustar a complexidade da recomendacao.",
-    kind: "options",
-    options: [
-      { label: "Nunca criei nada", value: "Nunca criei nada" },
-      { label: "Ja tentei mas nao vendi", value: "Ja tentei mas nao vendi" },
-      { label: "Ja vendi mas quero melhorar", value: "Ja vendi mas quero melhorar" },
-    ],
-  },
-];
+const CUSTOM_AUDIENCE = "__custom_audience__";
+const CUSTOM_PAIN = "__custom_pain__";
+const CUSTOM_TRANSFORMATION = "__custom_transformation__";
+const totalOnboardingSteps = 7;
 
 const initialAnswers: OnboardingAnswers = {
-  skill: "",
-  audience: "",
-  audiencePain: "",
-  transformation: "",
-  preferredFormat: "",
+  profile: "",
+  targetAudienceDescription: "",
+  selectedAudience: "",
+  selectedPain: "",
+  selectedTransformation: "",
   experienceLevel: "",
+  selectedFormat: "",
 };
+
+const initialCustomAnswers: CustomAnswers = {
+  audience: "",
+  pain: "",
+  transformation: "",
+};
+
+const experienceOptions: QuestionOption[] = [
+  { label: "Nunca criei nada", value: "Nunca criei nada" },
+  { label: "Ja tentei mas nao vendi", value: "Ja tentei mas nao vendi" },
+  { label: "Ja vendi e quero melhorar", value: "Ja vendi e quero melhorar" },
+];
 
 const loadingPhrases = [
   "Analisando seu conhecimento...",
@@ -137,25 +74,34 @@ export function ProductProntoFlow() {
   const [step, setStep] = useState<Step>("access");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<OnboardingAnswers>(initialAnswers);
+  const [customAnswers, setCustomAnswers] = useState<CustomAnswers>(initialCustomAnswers);
+  const [discoveryResult, setDiscoveryResult] = useState<DiscoveryResult | null>(null);
   const [loadingIndex, setLoadingIndex] = useState(0);
+  const [loadingMode, setLoadingMode] = useState<LoadingMode>("product");
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
-  const [generationError, setGenerationError] = useState<string | null>(null);
-  const [generationResult, setGenerationResult] = useState<ProductGenerationResult | null>(null);
+  const [flowError, setFlowError] = useState<string | null>(null);
+  const [generationResult, setGenerationResult] = useState<ProductResult | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  const resetFlowToAccess = useCallback(() => {
+  const resetCreationFlow = useCallback(() => {
     setAnswers(initialAnswers);
+    setCustomAnswers(initialCustomAnswers);
     setCurrentQuestion(0);
+    setDiscoveryResult(null);
     setCopiedBlock(null);
-    setGenerationError(null);
+    setFlowError(null);
     setGenerationResult(null);
+  }, []);
+
+  const resetFlowToAccess = useCallback(() => {
+    resetCreationFlow();
     setLoginError(null);
     setUserEmail(null);
     setStep("access");
-  }, []);
+  }, [resetCreationFlow]);
 
   useEffect(() => {
     let active = true;
@@ -165,18 +111,14 @@ export function ProductProntoFlow() {
         const supabase = getSupabaseBrowserClient();
         const { data } = await supabase.auth.getSession();
 
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         const email = data.session?.user.email ?? null;
         setUserEmail(email);
         setStep(email ? "onboarding" : "access");
         setIsCheckingSession(false);
       } catch {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         setIsCheckingSession(false);
         setUserEmail(null);
@@ -190,9 +132,7 @@ export function ProductProntoFlow() {
         const email = session?.user.email ?? null;
         setUserEmail(email);
 
-        if (!email) {
-          resetFlowToAccess();
-        }
+        if (!email) resetFlowToAccess();
       });
 
       void checkSession();
@@ -207,48 +147,26 @@ export function ProductProntoFlow() {
   }, [resetFlowToAccess]);
 
   useEffect(() => {
-    if (step !== "loading") {
-      return;
-    }
+    if (step !== "loading") return;
 
-    let active = true;
     const phraseTimer = window.setInterval(() => {
       setLoadingIndex((index) => (index + 1) % loadingPhrases.length);
     }, 900);
 
-    generateProduct(answers)
-      .then((result) => {
-        if (!active) {
-          return;
-        }
-
-        setGenerationResult(result);
-        setStep("result");
-      })
-      .catch(() => {
-        if (!active) {
-          return;
-        }
-
-        setGenerationError(
-          "Nao foi possivel gerar seu produto agora. Revise suas respostas e tente novamente.",
-        );
-        setStep("result");
-      });
-
-    return () => {
-      active = false;
-      window.clearInterval(phraseTimer);
-    };
-  }, [answers, step]);
+    return () => window.clearInterval(phraseTimer);
+  }, [step]);
 
   const progress = useMemo(
-    () => Math.round(((currentQuestion + 1) / questions.length) * 100),
+    () => Math.round(((currentQuestion + 1) / totalOnboardingSteps) * 100),
     [currentQuestion],
   );
 
   function updateAnswer(id: keyof OnboardingAnswers, value: string) {
     setAnswers((current) => ({ ...current, [id]: value }));
+  }
+
+  function updateCustomAnswer(id: keyof CustomAnswers, value: string) {
+    setCustomAnswers((current) => ({ ...current, [id]: value }));
   }
 
   async function enterExperience(email: string, password: string) {
@@ -257,10 +175,7 @@ export function ProductProntoFlow() {
 
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error || !data.session?.user.email) {
         setLoginError("Nao encontramos esse acesso. Confira o e-mail e a senha enviados apos a compra.");
@@ -277,27 +192,63 @@ export function ProductProntoFlow() {
   }
 
   function goBack() {
+    setFlowError(null);
     setCurrentQuestion((current) => Math.max(current - 1, 0));
   }
 
-  function goForward() {
-    if (currentQuestion === questions.length - 1) {
-      setLoadingIndex(0);
-      setGenerationError(null);
-      setGenerationResult(null);
-      setStep("loading");
+  async function goForward() {
+    setFlowError(null);
+
+    if (currentQuestion === 1) {
+      await discoverStrategicOptions();
+      return;
+    }
+
+    if (currentQuestion === totalOnboardingSteps - 1) {
+      await generateFinalProduct();
       return;
     }
 
     setCurrentQuestion((current) => current + 1);
   }
 
-  function restart() {
-    setAnswers(initialAnswers);
-    setCurrentQuestion(0);
-    setCopiedBlock(null);
-    setGenerationError(null);
+  async function discoverStrategicOptions() {
+    setLoadingMode("discovery");
+    setLoadingIndex(0);
+    setStep("loading");
+
+    try {
+      const result = await requestDiscovery({
+        profile: answers.profile,
+        targetAudienceDescription: answers.targetAudienceDescription,
+      });
+      setDiscoveryResult(result);
+      setCurrentQuestion(2);
+      setStep("onboarding");
+    } catch {
+      setFlowError("Nao conseguimos gerar sugestoes agora. Revise suas respostas e tente novamente.");
+      setStep("onboarding");
+    }
+  }
+
+  async function generateFinalProduct() {
+    setLoadingMode("product");
+    setLoadingIndex(0);
     setGenerationResult(null);
+    setStep("loading");
+
+    try {
+      const result = await requestProductGeneration(buildFinalGenerationInput(answers, customAnswers));
+      setGenerationResult(result);
+      setStep("result");
+    } catch {
+      setFlowError("Nao foi possivel gerar seu produto agora. Revise suas respostas e tente novamente.");
+      setStep("result");
+    }
+  }
+
+  function restart() {
+    resetCreationFlow();
     setStep("onboarding");
   }
 
@@ -353,29 +304,29 @@ export function ProductProntoFlow() {
         ) : null}
 
         {!isAuthenticated && (
-          <AccessScreen
-            error={loginError}
-            isSubmitting={isLoggingIn}
-            onEnter={enterExperience}
-          />
+          <AccessScreen error={loginError} isSubmitting={isLoggingIn} onEnter={enterExperience} />
         )}
         {isAuthenticated && step === "onboarding" && (
           <OnboardingScreen
             answers={answers}
             currentQuestion={currentQuestion}
+            customAnswers={customAnswers}
+            discoveryResult={discoveryResult}
+            error={flowError}
             onBack={goBack}
             onForward={goForward}
             onUpdateAnswer={updateAnswer}
+            onUpdateCustomAnswer={updateCustomAnswer}
             progress={progress}
           />
         )}
         {isAuthenticated && step === "loading" && (
-          <LoadingScreen phrase={loadingPhrases[loadingIndex]} />
+          <LoadingScreen mode={loadingMode} phrase={loadingPhrases[loadingIndex]} />
         )}
         {isAuthenticated && step === "result" && (
           <ResultScreen
             copiedBlock={copiedBlock}
-            error={generationError}
+            error={flowError}
             onCopyBlock={copyBlock}
             onRestart={restart}
             result={generationResult}
@@ -386,22 +337,51 @@ export function ProductProntoFlow() {
   );
 }
 
-async function generateProduct(
-  answers: ProductGenerationInput,
-): Promise<ProductGenerationResult> {
-  const response = await fetch("/api/generate", {
+async function requestDiscovery(input: DiscoveryInput): Promise<DiscoveryResult> {
+  const response = await fetch("/api/discovery", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(answers),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
   });
 
-  if (!response.ok) {
-    throw new Error("Product generation failed.");
-  }
+  if (!response.ok) throw new Error("Discovery failed.");
 
-  return response.json() as Promise<ProductGenerationResult>;
+  return response.json() as Promise<DiscoveryResult>;
+}
+
+async function requestProductGeneration(input: FinalGenerationInput): Promise<ProductResult> {
+  const response = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) throw new Error("Product generation failed.");
+
+  return response.json() as Promise<ProductResult>;
+}
+
+function buildFinalGenerationInput(
+  answers: OnboardingAnswers,
+  customAnswers: CustomAnswers,
+): FinalGenerationInput {
+  return {
+    profile: answers.profile,
+    targetAudienceDescription: answers.targetAudienceDescription,
+    selectedAudience: resolveCustomValue(answers.selectedAudience, CUSTOM_AUDIENCE, customAnswers.audience),
+    selectedPain: resolveCustomValue(answers.selectedPain, CUSTOM_PAIN, customAnswers.pain),
+    selectedTransformation: resolveCustomValue(
+      answers.selectedTransformation,
+      CUSTOM_TRANSFORMATION,
+      customAnswers.transformation,
+    ),
+    experienceLevel: answers.experienceLevel,
+    selectedFormat: answers.selectedFormat,
+  };
+}
+
+function resolveCustomValue(value: string, marker: string, customValue: string) {
+  return value === marker ? customValue.trim() : value;
 }
 
 function AccessScreen({
@@ -480,69 +460,55 @@ function AccessScreen({
 function OnboardingScreen({
   answers,
   currentQuestion,
+  customAnswers,
+  discoveryResult,
+  error,
   onBack,
   onForward,
   onUpdateAnswer,
+  onUpdateCustomAnswer,
   progress,
 }: {
   answers: OnboardingAnswers;
   currentQuestion: number;
+  customAnswers: CustomAnswers;
+  discoveryResult: DiscoveryResult | null;
+  error: string | null;
   onBack: () => void;
   onForward: () => void;
   onUpdateAnswer: (id: keyof OnboardingAnswers, value: string) => void;
+  onUpdateCustomAnswer: (id: keyof CustomAnswers, value: string) => void;
   progress: number;
 }) {
-  const question = questions[currentQuestion];
-  const value = answers[question.id];
-  const canContinue = value.trim().length > 0;
+  const canContinue = canContinueFromStep(currentQuestion, answers, customAnswers);
 
   return (
     <section className="w-full">
       <div className="mb-8">
         <div className="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-[0.18em] text-white/54">
-          <span>
-            Pergunta {currentQuestion + 1} de {questions.length}
-          </span>
+          <span>Etapa {currentQuestion + 1} de {totalOnboardingSteps}</span>
           <span>{progress}%</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-accent transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="h-full rounded-full bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
       <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/30">
-        <h2 className="text-2xl font-semibold leading-tight text-white">{question.title}</h2>
-        <p className="mt-3 text-sm leading-6 text-white/64">{question.helper}</p>
+        {renderOnboardingStep({
+          answers,
+          currentQuestion,
+          customAnswers,
+          discoveryResult,
+          onUpdateAnswer,
+          onUpdateCustomAnswer,
+        })}
 
-        <div className="mt-6">
-          {question.kind === "text" ? (
-            <TextQuestion
-              examples={question.examples ?? []}
-              maxLength={question.maxLength}
-              onChange={(nextValue) => onUpdateAnswer(question.id, nextValue)}
-              value={value}
-            />
-          ) : (
-            <div className="space-y-3">
-              <OptionQuestion
-                onChange={(nextValue) => onUpdateAnswer(question.id, nextValue)}
-                options={question.options ?? []}
-                value={value.startsWith("Outro:") ? "Outro" : value}
-              />
-              {question.id === "audience" && (value === "Outro" || value.startsWith("Outro:")) ? (
-                <input
-                  className="h-11 w-full rounded-md border border-white/10 bg-black/30 px-4 text-sm text-white outline-none transition focus:border-accent"
-                  onChange={(event) => onUpdateAnswer(question.id, `Outro: ${event.target.value}`)}
-                  placeholder="Descreva seu publico"
-                  value={value.startsWith("Outro:") ? value.replace("Outro: ", "") : ""}
-                />
-              ) : null}
-            </div>
-          )}
-        </div>
+        {error ? (
+          <p className="mt-5 rounded-md border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm leading-5 text-red-100">
+            {error}
+          </p>
+        ) : null}
 
         <div className="mt-8 flex gap-3">
           <button
@@ -556,10 +522,10 @@ function OnboardingScreen({
           <button
             className="h-11 flex-1 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.14em] text-[#0d0d0d] transition hover:bg-[#d8b95d] disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canContinue}
-            onClick={onForward}
+            onClick={() => void onForward()}
             type="button"
           >
-            {currentQuestion === questions.length - 1 ? "Gerar meu produto" : "Continuar"}
+            {currentQuestion === totalOnboardingSteps - 1 ? "Gerar meu produto" : "Continuar"}
           </button>
         </div>
       </div>
@@ -567,45 +533,287 @@ function OnboardingScreen({
   );
 }
 
-function TextQuestion({
-  examples,
-  maxLength,
+function renderOnboardingStep({
+  answers,
+  currentQuestion,
+  customAnswers,
+  discoveryResult,
+  onUpdateAnswer,
+  onUpdateCustomAnswer,
+}: {
+  answers: OnboardingAnswers;
+  currentQuestion: number;
+  customAnswers: CustomAnswers;
+  discoveryResult: DiscoveryResult | null;
+  onUpdateAnswer: (id: keyof OnboardingAnswers, value: string) => void;
+  onUpdateCustomAnswer: (id: keyof CustomAnswers, value: string) => void;
+}) {
+  if (currentQuestion === 0) {
+    return (
+      <TextStep
+        helper="Quanto mais detalhes voce der, melhor a IA vai transformar seu conhecimento em um produto."
+        onChange={(value) => onUpdateAnswer("profile", value)}
+        title="Quem e voce, qual sua profissao, o que voce faz bem e o que gostaria de ensinar?"
+        value={answers.profile}
+      />
+    );
+  }
+
+  if (currentQuestion === 1) {
+    return (
+      <TextStep
+        helper="Pode descrever uma pessoa, um grupo, uma situacao ou um tipo de cliente."
+        onChange={(value) => onUpdateAnswer("targetAudienceDescription", value)}
+        title="Quem voce gostaria de ajudar ou transformar com seu conhecimento?"
+        value={answers.targetAudienceDescription}
+      />
+    );
+  }
+
+  if (currentQuestion === 2) {
+    return (
+      <CardStep
+        customLabel="Nenhuma dessas. Quero descrever meu publico."
+        customPlaceholder="Descreva seu publico com suas palavras"
+        customValue={customAnswers.audience}
+        helper="Escolha o caminho com mais potencial para o seu produto."
+        items={(discoveryResult?.publicos ?? []).map((item) => ({
+          title: item.titulo,
+          description: item.motivo,
+          value: item.titulo,
+        }))}
+        marker={CUSTOM_AUDIENCE}
+        onChange={(value) => onUpdateAnswer("selectedAudience", value)}
+        onCustomChange={(value) => onUpdateCustomAnswer("audience", value)}
+        selectedValue={answers.selectedAudience}
+        title="Escolha seu melhor publico"
+      />
+    );
+  }
+
+  if (currentQuestion === 3) {
+    return (
+      <CardStep
+        customLabel="Quero descrever a dor com minhas palavras."
+        customPlaceholder="Descreva a dor principal"
+        customValue={customAnswers.pain}
+        helper="A dor certa deixa a promessa do produto mais clara e desejada."
+        items={(discoveryResult?.dores ?? []).map((item) => ({
+          title: item.titulo,
+          description: item.explicacao,
+          value: item.titulo,
+        }))}
+        marker={CUSTOM_PAIN}
+        onChange={(value) => onUpdateAnswer("selectedPain", value)}
+        onCustomChange={(value) => onUpdateCustomAnswer("pain", value)}
+        selectedValue={answers.selectedPain}
+        title="Escolha a dor principal"
+      />
+    );
+  }
+
+  if (currentQuestion === 4) {
+    return (
+      <CardStep
+        customLabel="Quero descrever a transformacao com minhas palavras."
+        customPlaceholder="Descreva a transformacao desejada"
+        customValue={customAnswers.transformation}
+        helper="Escolha o resultado que seu aluno mais gostaria de conquistar."
+        items={(discoveryResult?.transformacoes ?? []).map((item) => ({
+          title: item.titulo,
+          description: item.resultado,
+          value: item.titulo,
+        }))}
+        marker={CUSTOM_TRANSFORMATION}
+        onChange={(value) => onUpdateAnswer("selectedTransformation", value)}
+        onCustomChange={(value) => onUpdateCustomAnswer("transformation", value)}
+        selectedValue={answers.selectedTransformation}
+        title="Escolha a transformacao"
+      />
+    );
+  }
+
+  if (currentQuestion === 5) {
+    return (
+      <OptionsStep
+        helper="Isso ajuda a ajustar a complexidade da recomendacao."
+        onChange={(value) => onUpdateAnswer("experienceLevel", value)}
+        options={experienceOptions}
+        title="Voce ja criou algum produto digital antes?"
+        value={answers.experienceLevel}
+      />
+    );
+  }
+
+  return (
+    <CardStep
+      helper="Escolha o formato mais natural para criar rapido e entregar valor."
+      items={(discoveryResult?.formatos ?? []).map((item) => ({
+        title: item.nome,
+        description: item.motivo,
+        value: item.nome,
+      }))}
+      onChange={(value) => onUpdateAnswer("selectedFormat", value)}
+      selectedValue={answers.selectedFormat}
+      title="Escolha o formato recomendado"
+    />
+  );
+}
+
+function canContinueFromStep(
+  stepIndex: number,
+  answers: OnboardingAnswers,
+  customAnswers: CustomAnswers,
+) {
+  const valueByStep: Record<number, string> = {
+    0: answers.profile,
+    1: answers.targetAudienceDescription,
+    2: resolveCustomValue(answers.selectedAudience, CUSTOM_AUDIENCE, customAnswers.audience),
+    3: resolveCustomValue(answers.selectedPain, CUSTOM_PAIN, customAnswers.pain),
+    4: resolveCustomValue(
+      answers.selectedTransformation,
+      CUSTOM_TRANSFORMATION,
+      customAnswers.transformation,
+    ),
+    5: answers.experienceLevel,
+    6: answers.selectedFormat,
+  };
+
+  return (valueByStep[stepIndex] ?? "").trim().length > 0;
+}
+
+function TextStep({
+  helper,
   onChange,
+  title,
   value,
 }: {
-  examples: string[];
-  maxLength?: number;
+  helper: string;
   onChange: (value: string) => void;
+  title: string;
   value: string;
 }) {
   return (
-    <div className="space-y-4">
+    <div>
+      <h2 className="text-2xl font-semibold leading-tight text-white">{title}</h2>
+      <p className="mt-3 text-sm leading-6 text-white/64">{helper}</p>
       <textarea
-        className="min-h-32 w-full resize-none rounded-md border border-white/10 bg-black/30 px-4 py-3 text-base leading-6 text-white outline-none transition focus:border-accent"
-        maxLength={maxLength}
+        className="mt-6 min-h-40 w-full resize-none rounded-md border border-white/10 bg-black/30 px-4 py-3 text-base leading-6 text-white outline-none transition focus:border-accent"
         onChange={(event) => onChange(event.target.value)}
         placeholder="Escreva sua resposta aqui"
         value={value}
       />
-      {maxLength ? (
-        <p className="text-right text-xs text-white/42">
-          {value.length}/{maxLength}
-        </p>
-      ) : null}
+    </div>
+  );
+}
 
-      <div className="grid gap-2">
-        {examples.map((example) => (
-          <button
-            className="rounded-md border border-white/10 px-3 py-2 text-left text-sm text-white/72 transition hover:border-accent/70 hover:text-white"
-            key={example}
-            onClick={() => onChange(example)}
-            type="button"
-          >
-            {example}
-          </button>
+function OptionsStep({
+  helper,
+  onChange,
+  options,
+  title,
+  value,
+}: {
+  helper: string;
+  onChange: (value: string) => void;
+  options: QuestionOption[];
+  title: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold leading-tight text-white">{title}</h2>
+      <p className="mt-3 text-sm leading-6 text-white/64">{helper}</p>
+      <OptionQuestion onChange={onChange} options={options} value={value} />
+    </div>
+  );
+}
+
+function CardStep({
+  customLabel,
+  customPlaceholder,
+  customValue,
+  helper,
+  items,
+  marker,
+  onChange,
+  onCustomChange,
+  selectedValue,
+  title,
+}: {
+  customLabel?: string;
+  customPlaceholder?: string;
+  customValue?: string;
+  helper: string;
+  items: Array<{ title: string; description: string; value: string }>;
+  marker?: string;
+  onChange: (value: string) => void;
+  onCustomChange?: (value: string) => void;
+  selectedValue: string;
+  title: string;
+}) {
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold leading-tight text-white">{title}</h2>
+      <p className="mt-3 text-sm leading-6 text-white/64">{helper}</p>
+      <div className="mt-6 grid gap-3">
+        {items.map((item) => (
+          <ChoiceCard
+            description={item.description}
+            key={item.value}
+            onClick={() => onChange(item.value)}
+            selected={selectedValue === item.value}
+            title={item.title}
+          />
         ))}
+
+        {customLabel && marker ? (
+          <div className="space-y-3">
+            <ChoiceCard
+              description="Use esta opcao se nenhuma sugestao representar bem o que voce quer criar."
+              onClick={() => onChange(marker)}
+              selected={selectedValue === marker}
+              title={customLabel}
+            />
+            {selectedValue === marker ? (
+              <textarea
+                className="min-h-28 w-full resize-none rounded-md border border-white/10 bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition focus:border-accent"
+                onChange={(event) => onCustomChange?.(event.target.value)}
+                placeholder={customPlaceholder}
+                value={customValue ?? ""}
+              />
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+function ChoiceCard({
+  description,
+  onClick,
+  selected,
+  title,
+}: {
+  description: string;
+  onClick: () => void;
+  selected: boolean;
+  title: string;
+}) {
+  return (
+    <button
+      className={`rounded-md border px-4 py-3 text-left transition ${
+        selected
+          ? "border-accent bg-accent/12 text-white"
+          : "border-white/10 bg-black/20 text-white/72 hover:border-accent/70 hover:text-white"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="block text-sm font-semibold text-white">{title}</span>
+      <span className="mt-2 block text-sm leading-6 text-white/62">{description}</span>
+    </button>
   );
 }
 
@@ -619,7 +827,7 @@ function OptionQuestion({
   value: string;
 }) {
   return (
-    <div className="grid gap-3">
+    <div className="mt-6 grid gap-3">
       {options.map((option) => {
         const selected = option.value === value;
 
@@ -642,14 +850,16 @@ function OptionQuestion({
   );
 }
 
-function LoadingScreen({ phrase }: { phrase: string }) {
+function LoadingScreen({ mode, phrase }: { mode: LoadingMode; phrase: string }) {
   return (
     <section className="w-full text-center">
       <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
         Produto Pronto
       </p>
-      <div className="mx-auto mt-10 h-16 w-16 rounded-full border border-accent/20 border-t-accent animate-spin" />
-      <h2 className="mt-8 text-2xl font-semibold text-white">Criando seu produto</h2>
+      <div className="mx-auto mt-10 h-16 w-16 animate-spin rounded-full border border-accent/20 border-t-accent" />
+      <h2 className="mt-8 text-2xl font-semibold text-white">
+        {mode === "discovery" ? "Encontrando seus melhores caminhos" : "Criando seu produto"}
+      </h2>
       <p className="mt-3 min-h-6 text-sm text-white/64">{phrase}</p>
     </section>
   );
@@ -666,7 +876,7 @@ function ResultScreen({
   error: string | null;
   onCopyBlock: (block: ResultBlock) => void;
   onRestart: () => void;
-  result: ProductGenerationResult | null;
+  result: ProductResult | null;
 }) {
   const resultBlocks = result ? productResultToBlocks(result) : [];
 
@@ -712,102 +922,82 @@ function ResultScreen({
       {!error && result ? (
         <div className="space-y-4">
           {resultBlocks.map((block) => (
-          <article
-            className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20"
-            key={block.eyebrow}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
-                  {block.eyebrow}
-                </p>
-                <h2 className="mt-2 text-xl font-semibold leading-snug text-white">
-                  {block.title}
-                </h2>
+            <article
+              className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20"
+              key={block.eyebrow}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
+                    {block.eyebrow}
+                  </p>
+                  <h2 className="mt-2 text-xl font-semibold leading-snug text-white">
+                    {block.title}
+                  </h2>
+                </div>
+                <button
+                  className="rounded-md border border-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 transition hover:border-accent hover:text-accent"
+                  onClick={() => onCopyBlock(block)}
+                  type="button"
+                >
+                  {copiedBlock === block.eyebrow ? "Copiado" : "Copiar"}
+                </button>
               </div>
-              <button
-                className="rounded-md border border-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 transition hover:border-accent hover:text-accent"
-                onClick={() => onCopyBlock(block)}
-                type="button"
-              >
-                {copiedBlock === block.eyebrow ? "Copiado" : "Copiar"}
-              </button>
-            </div>
 
-            {Array.isArray(block.content) ? (
-              <ul className="mt-4 space-y-2 text-sm leading-6 text-white/68">
-                {block.content.map((item) => (
-                  <li className="rounded-md bg-black/20 px-3 py-2" key={item}>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-4 text-sm leading-6 text-white/68">{block.content}</p>
-            )}
-          </article>
+              {Array.isArray(block.content) ? (
+                <ul className="mt-4 space-y-2 text-sm leading-6 text-white/68">
+                  {block.content.map((item) => (
+                    <li className="rounded-md bg-black/20 px-3 py-2" key={item}>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm leading-6 text-white/68">{block.content}</p>
+              )}
+            </article>
           ))}
         </div>
       ) : null}
 
       {!error && result ? (
         <div className="sticky bottom-4 mt-6 grid gap-3 rounded-lg border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur sm:grid-cols-2">
-        <button
-          className="h-11 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
-          onClick={() => window.alert("PDF real sera implementado em uma etapa futura.")}
-          type="button"
-        >
-          Salvar meu resultado em PDF
-        </button>
-        <button
-          className="h-11 rounded-md border border-white/12 px-4 text-sm font-bold uppercase tracking-[0.12em] text-white transition hover:border-accent hover:text-accent"
-          onClick={() => window.alert("WhatsApp sera conectado em uma etapa futura.")}
-          type="button"
-        >
-          Falar com Gabriel no WhatsApp
-        </button>
+          <button
+            className="h-11 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+            onClick={() => window.alert("PDF real sera implementado em uma etapa futura.")}
+            type="button"
+          >
+            Salvar meu resultado em PDF
+          </button>
+          <button
+            className="h-11 rounded-md border border-white/12 px-4 text-sm font-bold uppercase tracking-[0.12em] text-white transition hover:border-accent hover:text-accent"
+            onClick={() => window.alert("WhatsApp sera conectado em uma etapa futura.")}
+            type="button"
+          >
+            Falar com Gabriel no WhatsApp
+          </button>
         </div>
       ) : null}
     </section>
   );
 }
 
-function productResultToBlocks(result: ProductGenerationResult): ResultBlock[] {
+function productResultToBlocks(result: ProductResult): ResultBlock[] {
   return [
-    {
-      eyebrow: "Seu Nicho",
-      title: "Seu produto vai atender",
-      content: result.nicho,
-    },
-    {
-      eyebrow: "A Ideia do Produto",
-      title: "Seu produto sera",
-      content: result.ideia,
-    },
+    { eyebrow: "Seu Nicho", title: "Seu produto vai atender", content: result.nicho },
+    { eyebrow: "A Ideia do Produto", title: "Seu produto sera", content: result.ideia },
     {
       eyebrow: "Sugestoes de Nome",
       title: "Escolha um nome ou use como inspiracao",
       content: result.nomes,
     },
-    {
-      eyebrow: "A Promessa Principal",
-      title: "O que seu produto promete",
-      content: result.promessa,
-    },
+    { eyebrow: "A Promessa Principal", title: "O que seu produto promete", content: result.promessa },
     {
       eyebrow: "Estrutura do Conteudo",
       title: "Seu produto tera a seguinte estrutura",
       content: result.estrutura,
     },
-    {
-      eyebrow: "Preco Sugerido",
-      title: "Preco ideal para lancamento",
-      content: result.preco,
-    },
-    {
-      eyebrow: "Proximo Passo",
-      title: "Seu produto esta desenhado",
-      content: result.proximo_passo,
-    },
+    { eyebrow: "Preco Sugerido", title: "Preco ideal para lancamento", content: result.preco },
+    { eyebrow: "Proximo Passo", title: "Seu produto esta desenhado", content: result.proximo_passo },
   ];
 }

@@ -1,12 +1,37 @@
-import "server-only";
+﻿import "server-only";
 
-import type { ProductGenerationInput, ProductGenerationResult } from "@/types";
+import type { DiscoveryInput, DiscoveryResult, FinalGenerationInput, ProductResult } from "@/types";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
-export async function generateWithGemini(
-  input: ProductGenerationInput,
-): Promise<ProductGenerationResult> {
+export async function generateDiscoveryWithGemini(
+  input: DiscoveryInput,
+): Promise<DiscoveryResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured.");
+  }
+
+  const response = await callGemini(apiKey, buildDiscoveryPrompt(input), 0.7);
+
+  if (!response.ok) {
+    throw new Error("Gemini discovery request failed.");
+  }
+
+  const payload = (await response.json()) as GeminiGenerateContentResponse;
+  const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    throw new Error("Gemini returned an empty discovery response.");
+  }
+
+  return parseDiscoveryResult(text);
+}
+
+export async function generateProductWithGemini(
+  input: FinalGenerationInput,
+): Promise<ProductResult> {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -16,17 +41,17 @@ export async function generateWithGemini(
   const response = await callGemini(apiKey, buildProductPrompt(input), 0.7);
 
   if (!response.ok) {
-    throw new Error("Gemini request failed.");
+    throw new Error("Gemini product request failed.");
   }
 
   const payload = (await response.json()) as GeminiGenerateContentResponse;
   const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!text) {
-    throw new Error("Gemini returned an empty response.");
+    throw new Error("Gemini returned an empty product response.");
   }
 
-  return parseProductGenerationResult(text);
+  return parseProductResult(text);
 }
 
 export async function testGeminiConnection(): Promise<void> {
@@ -51,46 +76,88 @@ export async function testGeminiConnection(): Promise<void> {
   }
 }
 
-export function buildProductPrompt(input: ProductGenerationInput): string {
+export function buildDiscoveryPrompt(input: DiscoveryInput): string {
+  return `Voce e um estrategista de infoprodutos especialista em transformar conhecimento em produtos digitais simples e vendaveis para o mercado brasileiro.
+
+Com base nas respostas abaixo, gere sugestoes estruturadas para guiar a criacao do produto.
+
+RESPOSTAS DO USUARIO:
+- Quem e a pessoa, profissao, o que faz bem e gostaria de ensinar: ${input.profile}
+- Quem gostaria de ajudar ou transformar: ${input.targetAudienceDescription}
+
+Retorne somente JSON valido neste formato exato:
+{
+  "especialidades": [
+    { "titulo": "", "descricao": "" },
+    { "titulo": "", "descricao": "" },
+    { "titulo": "", "descricao": "" }
+  ],
+  "publicos": [
+    { "titulo": "", "motivo": "" },
+    { "titulo": "", "motivo": "" },
+    { "titulo": "", "motivo": "" }
+  ],
+  "dores": [
+    { "titulo": "", "explicacao": "" },
+    { "titulo": "", "explicacao": "" },
+    { "titulo": "", "explicacao": "" },
+    { "titulo": "", "explicacao": "" }
+  ],
+  "transformacoes": [
+    { "titulo": "", "resultado": "" },
+    { "titulo": "", "resultado": "" },
+    { "titulo": "", "resultado": "" }
+  ],
+  "formatos": [
+    { "nome": "", "motivo": "" },
+    { "nome": "", "motivo": "" },
+    { "nome": "", "motivo": "" }
+  ]
+}
+
+Regras:
+- Retornar 3 especialidades.
+- Retornar 3 publicos.
+- Retornar 4 dores.
+- Retornar 3 transformacoes.
+- Retornar 3 formatos.
+- As sugestoes devem ser especificas para as respostas do usuario.
+- Nao use exemplos genericos.
+- Use linguagem simples, direta e brasileira.
+- Responda apenas com JSON valido. Sem texto adicional.`;
+}
+
+export function buildProductPrompt(input: FinalGenerationInput): string {
   return `Voce e um estrategista de infoprodutos especialista em criar produtos digitais de alta conversao para o mercado brasileiro.
 
 Com base nas informacoes abaixo, crie um produto digital completo e viavel para essa pessoa.
 
 INFORMACOES DO USUARIO:
-- O que sabe fazer: ${input.skill}
-- Publico que quer ajudar: ${input.audience}
-- Maior dor do publico: ${input.audiencePain}
-- Transformacao entregue: ${input.transformation}
-- Formato preferido: ${input.preferredFormat}
-- Nivel de experiencia: ${input.experienceLevel}
+- Quem e a pessoa, profissao, o que faz bem e gostaria de ensinar: ${input.profile}
+- Quem ela gostaria de ajudar ou transformar: ${input.targetAudienceDescription}
+- Publico escolhido: ${input.selectedAudience}
+- Dor principal escolhida: ${input.selectedPain}
+- Transformacao escolhida: ${input.selectedTransformation}
+- Nivel de experiencia com infoprodutos: ${input.experienceLevel}
+- Formato escolhido: ${input.selectedFormat}
 
-Gere exatamente isso, em formato JSON:
+Retorne somente JSON valido neste formato exato:
 {
   "nicho": "descricao especifica do nicho em uma frase",
   "ideia": "descricao do produto em uma frase clara e objetiva",
-  "nomes": [
-    "nome 1",
-    "nome 2",
-    "nome 3"
-  ],
-  "promessa": "promessa principal do produto com prazo, resultado e diferencial",
-  "estrutura": [
-    "capitulo ou modulo 1",
-    "capitulo ou modulo 2",
-    "capitulo ou modulo 3",
-    "capitulo ou modulo 4",
-    "capitulo ou modulo 5"
-  ],
+  "nomes": ["nome 1", "nome 2", "nome 3"],
+  "promessa": "promessa principal com prazo, resultado e diferencial",
+  "estrutura": ["modulo 1", "modulo 2", "modulo 3", "modulo 4", "modulo 5"],
   "preco": "faixa de preco sugerida com justificativa em uma linha",
   "proximo_passo": "texto motivacional de 2 linhas incentivando o usuario a comecar agora"
 }
 
 Regras:
-- Seja especifico. Nunca generico.
+- Seja especifico, nunca generico.
 - Use linguagem simples e direta.
 - O produto deve ser viavel para criar em poucos dias.
 - A promessa deve ter prazo, resultado concreto e diferencial.
-- Responda apenas com o JSON. Sem texto adicional.`;
+- Responda apenas com JSON. Sem texto adicional.`;
 }
 
 function callGemini(apiKey: string, prompt: string, temperature: number) {
@@ -117,11 +184,31 @@ function callGemini(apiKey: string, prompt: string, temperature: number) {
   );
 }
 
-function parseProductGenerationResult(text: string): ProductGenerationResult {
+function parseDiscoveryResult(text: string): DiscoveryResult {
   const parsed = parseJsonObject(text);
 
   if (!parsed) {
-    throw new Error("Gemini response is not valid JSON.");
+    throw new Error("Gemini discovery response is not valid JSON.");
+  }
+
+  if (
+    !isObjectArray(parsed.especialidades, 3, ["titulo", "descricao"]) ||
+    !isObjectArray(parsed.publicos, 3, ["titulo", "motivo"]) ||
+    !isObjectArray(parsed.dores, 4, ["titulo", "explicacao"]) ||
+    !isObjectArray(parsed.transformacoes, 3, ["titulo", "resultado"]) ||
+    !isObjectArray(parsed.formatos, 3, ["nome", "motivo"])
+  ) {
+    throw new Error("Gemini discovery response does not match the expected schema.");
+  }
+
+  return parsed as DiscoveryResult;
+}
+
+function parseProductResult(text: string): ProductResult {
+  const parsed = parseJsonObject(text);
+
+  if (!parsed) {
+    throw new Error("Gemini product response is not valid JSON.");
   }
 
   if (
@@ -133,7 +220,7 @@ function parseProductGenerationResult(text: string): ProductGenerationResult {
     typeof parsed.preco !== "string" ||
     typeof parsed.proximo_passo !== "string"
   ) {
-    throw new Error("Gemini response does not match the expected schema.");
+    throw new Error("Gemini product response does not match the expected schema.");
   }
 
   return {
@@ -162,6 +249,19 @@ function parseJsonObject(text: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function isObjectArray(value: unknown, length: number, keys: string[]) {
+  return (
+    Array.isArray(value) &&
+    value.length === length &&
+    value.every((item) =>
+      item &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      keys.every((key) => typeof (item as Record<string, unknown>)[key] === "string"),
+    )
+  );
 }
 
 function isThreeStringArray(value: unknown): value is [string, string, string] {

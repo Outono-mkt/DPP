@@ -1,10 +1,18 @@
-import "server-only";
+﻿import "server-only";
 
-import type { ProductGenerationInput, ProductGenerationResult } from "@/types";
+import type { DiscoveryInput, DiscoveryResult, FinalGenerationInput, ProductResult } from "@/types";
 
-export async function generateWithOpenAI(
-  input: ProductGenerationInput,
-): Promise<ProductGenerationResult> {
+export async function generateDiscoveryWithOpenAI(
+  input: DiscoveryInput,
+): Promise<DiscoveryResult> {
+  void input;
+
+  throw new Error("OpenAI provider is reserved for future implementation.");
+}
+
+export async function generateProductWithOpenAI(
+  input: FinalGenerationInput,
+): Promise<ProductResult> {
   void input;
 
   throw new Error("OpenAI provider is reserved for future implementation.");

@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import { generateProductDraft } from "@/lib/ai";
-import type { ProductGenerationInput } from "@/types";
+import { generateProduct } from "@/lib/ai";
+import type { FinalGenerationInput } from "@/types";
 
 export async function POST(request: Request) {
   try {
     const input = await request.json();
 
-    if (!isProductGenerationInput(input)) {
+    if (!isFinalGenerationInput(input)) {
       return NextResponse.json(
         { error: "As respostas do onboarding estao incompletas." },
         { status: 400 },
       );
     }
 
-    const result = await generateProductDraft(input);
+    const result = await generateProduct(input);
 
     return NextResponse.json(result);
   } catch {
@@ -25,20 +25,21 @@ export async function POST(request: Request) {
   }
 }
 
-function isProductGenerationInput(value: unknown): value is ProductGenerationInput {
+function isFinalGenerationInput(value: unknown): value is FinalGenerationInput {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
 
-  const candidate = value as Record<keyof ProductGenerationInput, unknown>;
+  const candidate = value as Record<keyof FinalGenerationInput, unknown>;
 
   return (
-    isFilledString(candidate.skill) &&
-    isFilledString(candidate.audience) &&
-    isFilledString(candidate.audiencePain) &&
-    isFilledString(candidate.transformation) &&
-    isFilledString(candidate.preferredFormat) &&
-    isFilledString(candidate.experienceLevel)
+    isFilledString(candidate.profile) &&
+    isFilledString(candidate.targetAudienceDescription) &&
+    isFilledString(candidate.selectedAudience) &&
+    isFilledString(candidate.selectedPain) &&
+    isFilledString(candidate.selectedTransformation) &&
+    isFilledString(candidate.experienceLevel) &&
+    isFilledString(candidate.selectedFormat)
   );
 }
 
