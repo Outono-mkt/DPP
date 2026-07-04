@@ -46,7 +46,7 @@ export async function listUserProductResults(userId: string): Promise<SavedProdu
     throw error;
   }
 
-  return (data ?? []) as SavedProductSummary[];
+  return (data ?? []).map(normalizeSavedProductSummary);
 }
 
 export async function getUserProductResult(
@@ -65,7 +65,7 @@ export async function getUserProductResult(
     throw error;
   }
 
-  return data as SavedProductResult | null;
+  return data ? normalizeSavedProductResult(data) : null;
 }
 
 export async function saveUserProductResult(
@@ -106,7 +106,7 @@ export async function saveUserProductResult(
     throw error;
   }
 
-  return data as SavedProductResult;
+  return normalizeSavedProductResult(data);
 }
 
 export class ProductLimitError extends Error {
@@ -124,4 +124,80 @@ function getBearerToken(request: Request) {
   }
 
   return authorization.slice("bearer ".length).trim();
+}
+
+function normalizeSavedProductSummary(value: unknown): SavedProductSummary {
+  const row = value as SavedProductSummary;
+
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    generated_result: normalizeProductResult(row.generated_result),
+  };
+}
+
+function normalizeSavedProductResult(value: unknown): SavedProductResult {
+  const row = value as SavedProductResult;
+
+  return {
+    ...row,
+    generated_result: normalizeProductResult(row.generated_result),
+  };
+}
+
+function normalizeProductResult(value: unknown): ProductResult {
+  const parsed = typeof value === "string" ? parseJson(value) : value;
+
+  if (!isProductResult(parsed)) {
+    throw new Error("Saved generated_result does not match the expected product schema.");
+  }
+
+  return parsed;
+}
+
+function parseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function isProductResult(value: unknown): value is ProductResult {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const result = value as Partial<ProductResult>;
+
+  return (
+    isFilledString(result.oportunidade) &&
+    isFilledString(result.nicho) &&
+    isFilledString(result.ideia) &&
+    isStringArray(result.nomes) &&
+    isFilledString(result.promessa) &&
+    isStringArray(result.beneficios) &&
+    Array.isArray(result.perfis_clientes) &&
+    result.perfis_clientes.length > 0 &&
+    result.perfis_clientes.every(
+      (profile) =>
+        Boolean(profile) &&
+        typeof profile === "object" &&
+        isFilledString((profile as { titulo?: unknown }).titulo) &&
+        isFilledString((profile as { descricao?: unknown }).descricao),
+    ) &&
+    isStringArray(result.frases_cliente) &&
+    isStringArray(result.estrutura) &&
+    isFilledString(result.preco) &&
+    isFilledString(result.proximo_passo) &&
+    isFilledString(result.cta_consultoria)
+  );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.length > 0 && value.every(isFilledString);
+}
+
+function isFilledString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }

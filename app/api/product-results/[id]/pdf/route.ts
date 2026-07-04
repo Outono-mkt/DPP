@@ -13,6 +13,14 @@ export async function GET(
   try {
     const user = await getAuthenticatedUser(request);
     const { id } = await context.params;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Id do produto nao informado." },
+        { status: 400 },
+      );
+    }
+
     const result = await getUserProductResult(user.id, id);
 
     if (!result) {
@@ -27,6 +35,10 @@ export async function GET(
       result: result.generated_result,
       whatsappUrl: process.env.NEXT_PUBLIC_WHATSAPP_URL,
     });
+
+    if (pdf.byteLength === 0) {
+      throw new Error("PDF buffer is empty.");
+    }
 
     return new Response(Buffer.from(pdf), {
       headers: {

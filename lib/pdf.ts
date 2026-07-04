@@ -24,6 +24,8 @@ export function generateProductResultPdf({
   result: ProductResult;
   whatsappUrl?: string;
 }): Uint8Array {
+  validateProductResultForPdf(result);
+
   const writer = new PdfWriter();
   let y = PAGE_HEIGHT - MARGIN;
 
@@ -75,7 +77,13 @@ export function generateProductResultPdf({
       : "Fale comigo para construir esse produto: link de WhatsApp em configuracao",
   );
 
-  return writer.render();
+  const pdf = writer.render();
+
+  if (pdf.byteLength === 0) {
+    throw new Error("PDF buffer is empty.");
+  }
+
+  return pdf;
 }
 
 function getPdfSections(result: ProductResult): PdfSection[] {
@@ -156,9 +164,9 @@ class PdfWriter {
 
     const objects: string[] = [
       "<< /Type /Catalog /Pages 2 0 R >>",
-      `<< /Type /Pages /Kids ${this.pages
+      `<< /Type /Pages /Kids [${this.pages
         .map((_, index) => `${3 + index * 2} 0 R`)
-        .join(" ")} /Count ${this.pages.length} >>`,
+        .join(" ")}] /Count ${this.pages.length} >>`,
     ];
 
     this.pages.forEach((content, index) => {
@@ -195,4 +203,31 @@ function escapePdfText(text: string) {
 
 function removeDiacritics(text: string) {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function validateProductResultForPdf(result: ProductResult) {
+  const requiredStrings = [
+    result.oportunidade,
+    result.nicho,
+    result.ideia,
+    result.promessa,
+    result.preco,
+    result.proximo_passo,
+    result.cta_consultoria,
+  ];
+
+  const requiredArrays = [
+    result.nomes,
+    result.beneficios,
+    result.perfis_clientes,
+    result.frases_cliente,
+    result.estrutura,
+  ];
+
+  if (
+    requiredStrings.some((value) => typeof value !== "string" || value.trim().length === 0) ||
+    requiredArrays.some((value) => !Array.isArray(value) || value.length === 0)
+  ) {
+    throw new Error("Product result is incomplete for PDF generation.");
+  }
 }

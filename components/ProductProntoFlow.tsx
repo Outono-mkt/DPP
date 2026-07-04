@@ -308,7 +308,7 @@ export function ProductProntoFlow() {
 
   async function downloadPdf() {
     if (!activeResultId) {
-      setPersistenceMessage("Salve ou selecione um produto antes de gerar o PDF.");
+      setPersistenceMessage("Salve o produto antes de gerar o PDF.");
       return;
     }
 
