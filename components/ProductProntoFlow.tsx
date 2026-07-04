@@ -33,6 +33,7 @@ type ResultBlock = {
   title: string;
   eyebrow: string;
   content: string | string[];
+  action?: "whatsapp";
 };
 
 const CUSTOM_AUDIENCE = "__custom_audience__";
@@ -955,26 +956,29 @@ function ResultScreen({
               ) : (
                 <p className="mt-4 text-sm leading-6 text-white/68">{block.content}</p>
               )}
+
+              {block.action === "whatsapp" ? (
+                <button
+                  className="mt-5 h-11 w-full rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+                  onClick={() => window.alert("WhatsApp sera conectado em uma etapa futura.")}
+                  type="button"
+                >
+                  Quero construir esse produto com o Gabriel
+                </button>
+              ) : null}
             </article>
           ))}
         </div>
       ) : null}
 
       {!error && result ? (
-        <div className="sticky bottom-4 mt-6 grid gap-3 rounded-lg border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur sm:grid-cols-2">
+        <div className="sticky bottom-4 mt-6 rounded-lg border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur">
           <button
-            className="h-11 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+            className="h-11 w-full rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
             onClick={() => window.alert("PDF real sera implementado em uma etapa futura.")}
             type="button"
           >
             Salvar meu resultado em PDF
-          </button>
-          <button
-            className="h-11 rounded-md border border-white/12 px-4 text-sm font-bold uppercase tracking-[0.12em] text-white transition hover:border-accent hover:text-accent"
-            onClick={() => window.alert("WhatsApp sera conectado em uma etapa futura.")}
-            type="button"
-          >
-            Falar com Gabriel no WhatsApp
           </button>
         </div>
       ) : null}
@@ -984,8 +988,13 @@ function ResultScreen({
 
 function productResultToBlocks(result: ProductResult): ResultBlock[] {
   return [
-    { eyebrow: "Seu Nicho", title: "Seu produto vai atender", content: result.nicho },
-    { eyebrow: "A Ideia do Produto", title: "Seu produto sera", content: result.ideia },
+    {
+      eyebrow: "Oportunidade de Mercado",
+      title: "Por que essa ideia faz sentido",
+      content: result.oportunidade,
+    },
+    { eyebrow: "Nicho Validado", title: "Seu produto vai atender", content: result.nicho },
+    { eyebrow: "Ideia do Produto", title: "Seu produto sera", content: result.ideia },
     {
       eyebrow: "Sugestoes de Nome",
       title: "Escolha um nome ou use como inspiracao",
@@ -993,11 +1002,32 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
     },
     { eyebrow: "A Promessa Principal", title: "O que seu produto promete", content: result.promessa },
     {
+      eyebrow: "Beneficios que Voce Pode Vender",
+      title: "Argumentos concretos para sua oferta",
+      content: result.beneficios,
+    },
+    {
+      eyebrow: "Perfis Ideais de Cliente",
+      title: "Recortes de publico com maior potencial",
+      content: result.perfis_clientes.map((profile) => `${profile.titulo}: ${profile.descricao}`),
+    },
+    {
+      eyebrow: "Frases que seu Cliente Diria",
+      title: "Como essa dor aparece na vida real",
+      content: result.frases_cliente,
+    },
+    {
       eyebrow: "Estrutura do Conteudo",
       title: "Seu produto tera a seguinte estrutura",
       content: result.estrutura,
     },
     { eyebrow: "Preco Sugerido", title: "Preco ideal para lancamento", content: result.preco },
-    { eyebrow: "Proximo Passo", title: "Seu produto esta desenhado", content: result.proximo_passo },
+    { eyebrow: "Proximos Passos", title: "Seu produto esta desenhado", content: result.proximo_passo },
+    {
+      eyebrow: "Construir com Gabriel",
+      title: "Transforme a estrategia em produto real",
+      content: result.cta_consultoria,
+      action: "whatsapp",
+    },
   ];
 }

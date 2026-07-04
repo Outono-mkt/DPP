@@ -39,11 +39,29 @@ export type FinalGenerationInput = {
 };
 
 export type ProductResult = {
+  oportunidade: string;
   nicho: string;
   ideia: string;
   nomes: [string, string, string];
   promessa: string;
+  beneficios: [string, string, string, string, string, string, string, string, string, string];
+  perfis_clientes: [
+    {
+      titulo: string;
+      descricao: string;
+    },
+    {
+      titulo: string;
+      descricao: string;
+    },
+    {
+      titulo: string;
+      descricao: string;
+    },
+  ];
+  frases_cliente: [string, string, string, string, string];
   estrutura: [string, string, string, string, string];
   preco: string;
   proximo_passo: string;
+  cta_consultoria: string;
 };
