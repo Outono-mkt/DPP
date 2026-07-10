@@ -30,9 +30,11 @@ export async function GET(
       );
     }
 
-    const pdf = generateProductResultPdf({
+    const pdf = await generateProductResultPdf({
       createdAt: result.created_at,
       result: result.generated_result,
+      selectedFormat: result.selected_format,
+      userDisplayName: user.email,
       whatsappUrl: process.env.NEXT_PUBLIC_WHATSAPP_URL,
     });
 
