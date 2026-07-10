@@ -470,10 +470,14 @@ export function ProductProntoFlow() {
   const isAuthenticated = Boolean(userEmail);
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
+    <main
+      className={`min-h-screen bg-background text-foreground ${
+        isAuthenticated ? "px-4 py-6 sm:px-6 lg:px-8" : ""
+      }`}
+    >
       <div
-        className={`mx-auto flex min-h-[calc(100vh-3rem)] w-full flex-col ${
-          isAuthenticated ? "max-w-[1240px]" : "max-w-none justify-center"
+        className={`mx-auto flex w-full flex-col ${
+          isAuthenticated ? "min-h-[calc(100vh-3rem)] max-w-[1240px]" : "min-h-screen max-w-none"
         }`}
       >
         {isAuthenticated ? (
@@ -772,117 +776,125 @@ function AccessScreen({
   const [password, setPassword] = useState("");
 
   return (
-    <section className="grid min-h-[calc(100vh-3rem)] w-full overflow-hidden rounded-[36px] border border-white/8 bg-[#0D0D0D] shadow-2xl shadow-black/30 md:grid-cols-[45fr_55fr]">
-      <div
-        className="flex min-h-[360px] items-start bg-cover bg-[left_center] bg-no-repeat p-8 sm:min-h-[440px] sm:p-12 lg:p-20"
-        style={{
-          backgroundImage:
-            'linear-gradient(180deg, rgba(13,13,13,.10), rgba(13,13,13,.18)), url("/brand/login-hero.png")',
-        }}
-      >
-        <div className="max-w-[560px]">
-          <BrandLogo height={78} width={320} variant="horizontal" />
-          <h1 className="mt-12 max-w-[560px] text-[2.75rem] font-bold leading-[1.08] text-white sm:text-[3.6rem] lg:text-[4.35rem]">
-            Transforme seu conhecimento
-            <br />
-            em um
-            <br />
-            <span className="text-accent">produto digital.</span>
-          </h1>
+    <section
+      className="relative min-h-screen w-full overflow-hidden bg-[#0D0D0D] bg-cover bg-[25%_center] bg-no-repeat md:bg-[left_center] md:bg-fixed"
+      style={{
+        backgroundImage:
+          'linear-gradient(90deg, rgba(13,13,13,.12) 0%, rgba(13,13,13,.40) 48%, rgba(13,13,13,.82) 68%, rgba(13,13,13,.96) 100%), url("/brand/login-hero.png")',
+      }}
+    >
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#0D0D0D]/35 md:hidden" />
+      <div className="relative z-10 grid min-h-screen w-full grid-cols-1 items-center gap-10 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] md:gap-[6vw] md:px-[7vw] md:py-12">
+        <div className="flex min-w-0 items-center">
+          <div className="max-w-[720px]">
+            <BrandLogo height={78} width={320} variant="horizontal" />
+            <h1 className="mt-10 max-w-[720px] text-[2.55rem] font-bold leading-[1.06] text-white sm:text-[3rem] md:text-[3.5rem] lg:text-[4.25rem]">
+              Transforme seu conhecimento
+              <br />
+              em um
+              <br />
+              <span className="text-accent">produto digital.</span>
+            </h1>
+          </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-14">
-        <form
-          className="w-full max-w-[520px] space-y-5 rounded-[28px] border border-white/8 bg-[#141414] p-6 shadow-2xl shadow-black/35 sm:p-9 lg:p-10"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void onEnter(email, password);
-          }}
-        >
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/8 bg-[#1B1B1B] text-accent">
-            <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 24 24">
-              <path
-                d="M7.5 10V7.7C7.5 5.2 9.5 3.2 12 3.2s4.5 2 4.5 4.5V10"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeWidth="1.8"
-              />
-              <path
-                d="M6.8 10h10.4c.9 0 1.6.7 1.6 1.6v6.1c0 .9-.7 1.6-1.6 1.6H6.8c-.9 0-1.6-.7-1.6-1.6v-6.1c0-.9.7-1.6 1.6-1.6Z"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              />
-              <path d="M12 14v2.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-            </svg>
-          </div>
-          <h2 className="text-center text-3xl font-bold leading-tight text-white sm:text-4xl">
-            Acesse <span className="text-accent">sua conta</span>
-          </h2>
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-white">Email</span>
-            <input
-              className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15"
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="seuemail@exemplo.com"
-              type="email"
-              value={email}
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-white">Senha</span>
-            <input
-              className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15"
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Senha enviada por e-mail"
-              type="password"
-              value={password}
-            />
-          </label>
-
-          <div className="flex items-center justify-between gap-4 text-sm text-[#A8A8A8]">
-            <label className="flex min-w-0 items-center gap-2">
-              <input
-                className="h-4 w-4 rounded border-white/20 bg-[#1B1B1B] accent-[#C9A84C]"
-                type="checkbox"
-              />
-              <span>Lembrar meu acesso</span>
-            </label>
-            <button
-              className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414]"
-              type="button"
-            >
-              Esqueci minha senha
-            </button>
-          </div>
-
-          {error ? (
-            <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
-              {error}
-            </p>
-          ) : null}
-
-          <button
-            className="h-14 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/10 transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414] disabled:cursor-not-allowed disabled:opacity-55"
-            disabled={isSubmitting}
-            type="submit"
+        <div className="flex w-full items-center justify-center md:justify-end">
+          <form
+            className="w-full max-w-[520px] space-y-5 rounded-[28px] border border-white/10 bg-[#141414]/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,.42)] backdrop-blur-[14px] sm:p-9 lg:p-[42px]"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void onEnter(email, password);
+            }}
           >
-            {isSubmitting ? "Entrando..." : "Entrar"}
-          </button>
-          <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm font-medium text-[#A8A8A8]">
-            <svg aria-hidden="true" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24">
-              <path
-                d="M12 3.4 18.5 6v5.2c0 4.1-2.6 7.8-6.5 9.1-3.9-1.3-6.5-5-6.5-9.1V6L12 3.4Z"
-                stroke="currentColor"
-                strokeLinejoin="round"
-                strokeWidth="1.8"
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/8 bg-[#1B1B1B] text-accent">
+              <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 24 24">
+                <path
+                  d="M7.5 10V7.7C7.5 5.2 9.5 3.2 12 3.2s4.5 2 4.5 4.5V10"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="1.8"
+                />
+                <path
+                  d="M6.8 10h10.4c.9 0 1.6.7 1.6 1.6v6.1c0 .9-.7 1.6-1.6 1.6H6.8c-.9 0-1.6-.7-1.6-1.6v-6.1c0-.9.7-1.6 1.6-1.6Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                />
+                <path d="M12 14v2.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+              </svg>
+            </div>
+            <h2 className="text-center text-3xl font-bold leading-tight text-white sm:text-4xl">
+              Acesse <span className="text-accent">sua conta</span>
+            </h2>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-white">E-mail</span>
+              <input
+                className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15 sm:h-[58px]"
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="seuemail@exemplo.com"
+                type="email"
+                value={email}
               />
-              <path d="m9.4 12 1.7 1.7 3.7-4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-            </svg>
-            <span>Ambiente seguro e protegido</span>
-          </div>
-        </form>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-white">Senha</span>
+              <input
+                className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15 sm:h-[58px]"
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Senha enviada por e-mail"
+                type="password"
+                value={password}
+              />
+            </label>
+
+            <div className="flex items-center justify-between gap-4 text-sm text-[#A8A8A8]">
+              <label className="flex min-w-0 items-center gap-2">
+                <input
+                  className="h-4 w-4 rounded border-white/20 bg-[#1B1B1B] accent-[#C9A84C]"
+                  type="checkbox"
+                />
+                <span>Lembrar meu acesso</span>
+              </label>
+              <button
+                className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414]"
+                type="button"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+
+            {error ? (
+              <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
+                {error}
+              </p>
+            ) : null}
+
+            <button
+              className="h-14 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/10 transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414] disabled:cursor-not-allowed disabled:opacity-55 sm:h-[58px]"
+              disabled={isSubmitting}
+              type="submit"
+            >
+              {isSubmitting ? "Entrando..." : "Entrar"}
+            </button>
+            <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm font-medium text-[#A8A8A8]">
+              <svg aria-hidden="true" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24">
+                <path
+                  d="M12 3.4 18.5 6v5.2c0 4.1-2.6 7.8-6.5 9.1-3.9-1.3-6.5-5-6.5-9.1V6L12 3.4Z"
+                  stroke="currentColor"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                />
+                <path
+                  d="m9.4 12 1.7 1.7 3.7-4"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="1.8"
+                />
+              </svg>
+              <span>Ambiente seguro e protegido</span>
+            </div>
+          </form>
+        </div>
       </div>
     </section>
   );
