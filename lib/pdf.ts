@@ -67,14 +67,12 @@ export function generateProductResultPdf({
 
   ensureSpace(92);
   y -= 10;
-  addText("Quer transformar essa estrategia em um produto pronto para vender?", SECTION_SIZE, 18);
-  addText(
-    "Eu posso te ajudar a construir posicionamento, oferta, pagina de vendas e plano de lancamento.",
-  );
+  addText(result.cta_consultoria.titulo, SECTION_SIZE, 18);
+  addText(result.cta_consultoria.descricao);
   addText(
     whatsappUrl
-      ? `Fale comigo para construir esse produto: ${whatsappUrl}`
-      : "Fale comigo para construir esse produto: link de WhatsApp em configuracao",
+      ? `${result.cta_consultoria.botao}: ${whatsappUrl}`
+      : `${result.cta_consultoria.botao}: link de WhatsApp em configuracao`,
   );
 
   const pdf = writer.render();
@@ -93,16 +91,44 @@ function getPdfSections(result: ProductResult): PdfSection[] {
     { title: "Ideia do Produto", content: result.ideia },
     { title: "Sugestoes de Nome", content: result.nomes },
     { title: "Promessa Principal", content: result.promessa },
-    { title: "Beneficios", content: result.beneficios },
+    {
+      title: "Mecanismo Unico",
+      content: `${result.mecanismo.nome}: ${result.mecanismo.explicacao}`,
+    },
+    { title: "Beneficios que Voce Pode Vender", content: result.beneficios },
     {
       title: "Perfis Ideais de Cliente",
       content: result.perfis_clientes.map((profile) => `${profile.titulo}: ${profile.descricao}`),
     },
     { title: "Frases que seu Cliente Diria", content: result.frases_cliente },
-    { title: "Estrutura do Conteudo", content: result.estrutura },
+    { title: "Estrutura do Produto", content: result.estrutura },
+    {
+      title: "Objecoes Principais",
+      content: result.objecoes.map(
+        (objection) =>
+          `${objection.objecao}: ${objection.porque_aparece} Resposta: ${objection.como_responder}`,
+      ),
+    },
+    {
+      title: "Como Vender Esse Produto",
+      content: [
+        `Angulo principal: ${result.como_vender.angulo_principal}`,
+        `Problema de entrada: ${result.como_vender.problema_de_entrada}`,
+        `Transformacao destacada: ${result.como_vender.transformacao_destacada}`,
+        `Prova recomendada: ${result.como_vender.prova_recomendada}`,
+        `CTA recomendado: ${result.como_vender.cta_recomendado}`,
+      ],
+    },
     { title: "Preco Sugerido", content: result.preco },
     { title: "Proximos Passos", content: result.proximo_passo },
-    { title: "CTA final", content: result.cta_consultoria },
+    {
+      title: result.cta_consultoria.titulo,
+      content: [
+        result.cta_consultoria.contexto,
+        result.cta_consultoria.descricao,
+        result.cta_consultoria.botao,
+      ],
+    },
   ];
 }
 
@@ -211,9 +237,19 @@ function validateProductResultForPdf(result: ProductResult) {
     result.nicho,
     result.ideia,
     result.promessa,
+    result.mecanismo.nome,
+    result.mecanismo.explicacao,
     result.preco,
     result.proximo_passo,
-    result.cta_consultoria,
+    result.como_vender.angulo_principal,
+    result.como_vender.problema_de_entrada,
+    result.como_vender.transformacao_destacada,
+    result.como_vender.prova_recomendada,
+    result.como_vender.cta_recomendado,
+    result.cta_consultoria.titulo,
+    result.cta_consultoria.contexto,
+    result.cta_consultoria.descricao,
+    result.cta_consultoria.botao,
   ];
 
   const requiredArrays = [
@@ -222,6 +258,7 @@ function validateProductResultForPdf(result: ProductResult) {
     result.perfis_clientes,
     result.frases_cliente,
     result.estrutura,
+    result.objecoes,
   ];
 
   if (

@@ -46,6 +46,10 @@ export type ProductResult = {
   ideia: string;
   nomes: [string, string, string];
   promessa: string;
+  mecanismo: {
+    nome: string;
+    explicacao: string;
+  };
   beneficios: [string, string, string, string, string, string, string, string, string, string];
   perfis_clientes: [
     {
@@ -63,9 +67,48 @@ export type ProductResult = {
   ];
   frases_cliente: [string, string, string, string, string];
   estrutura: string[];
+  objecoes: [
+    {
+      objecao: string;
+      porque_aparece: string;
+      como_responder: string;
+    },
+    {
+      objecao: string;
+      porque_aparece: string;
+      como_responder: string;
+    },
+    {
+      objecao: string;
+      porque_aparece: string;
+      como_responder: string;
+    },
+    {
+      objecao: string;
+      porque_aparece: string;
+      como_responder: string;
+    },
+    {
+      objecao: string;
+      porque_aparece: string;
+      como_responder: string;
+    },
+  ];
+  como_vender: {
+    angulo_principal: string;
+    problema_de_entrada: string;
+    transformacao_destacada: string;
+    prova_recomendada: string;
+    cta_recomendado: string;
+  };
   preco: string;
   proximo_passo: string;
-  cta_consultoria: string;
+  cta_consultoria: {
+    titulo: string;
+    contexto: string;
+    descricao: string;
+    botao: string;
+  };
 };
 
 export type SavedProductResult = {

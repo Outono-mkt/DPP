@@ -185,6 +185,10 @@ Retorne somente JSON valido neste formato exato:
   "ideia": "descricao do produto em uma frase clara e objetiva",
   "nomes": ["nome 1", "nome 2", "nome 3"],
   "promessa": "promessa principal com prazo, resultado e diferencial",
+  "mecanismo": {
+    "nome": "nome curto e especifico do mecanismo",
+    "explicacao": "como o produto entrega a transformacao"
+  },
   "beneficios": [
     "beneficio concreto 1",
     "beneficio concreto 2",
@@ -210,9 +214,28 @@ Retorne somente JSON valido neste formato exato:
     "frase real 5"
   ],
   "estrutura": ["etapa personalizada seguindo exatamente a metodologia do formato escolhido"],
+  "objecoes": [
+    { "objecao": "", "porque_aparece": "", "como_responder": "" },
+    { "objecao": "", "porque_aparece": "", "como_responder": "" },
+    { "objecao": "", "porque_aparece": "", "como_responder": "" },
+    { "objecao": "", "porque_aparece": "", "como_responder": "" },
+    { "objecao": "", "porque_aparece": "", "como_responder": "" }
+  ],
+  "como_vender": {
+    "angulo_principal": "",
+    "problema_de_entrada": "",
+    "transformacao_destacada": "",
+    "prova_recomendada": "",
+    "cta_recomendado": ""
+  },
   "preco": "faixa de preco sugerida com justificativa em uma linha",
   "proximo_passo": "proximas acoes praticas para comecar agora",
-  "cta_consultoria": "CTA contextual em primeira pessoa para falar comigo e construir esse produto"
+  "cta_consultoria": {
+    "titulo": "Vamos transformar essa estrategia em um plano de acao?",
+    "contexto": "",
+    "descricao": "",
+    "botao": "Quero montar meu plano de acao"
+  }
 }
 
 Regras:
@@ -230,6 +253,9 @@ Regras:
 - Nao crie uma estrutura completamente nova.
 - Respeite completamente o formato.
 - A oportunidade deve explicar em 2 ou 3 linhas por que essa ideia faz sentido, sem dizer que foi feita pesquisa real de mercado.
+- O mecanismo deve ser curto, especifico e explicar como o produto entrega a transformacao.
+- O mecanismo deve ser coerente com nicho, dor, transformacao, formato e estrutura.
+- Nao invente nome sofisticado sem sentido para o mecanismo.
 - A promessa deve ter resultado concreto e preferir numero, prazo ou situacao especifica.
 - A promessa nao deve usar ponto de exclamacao.
 - A promessa nao deve usar travessao.
@@ -240,7 +266,18 @@ Regras:
 - Nao crie perfis iguais com nomes diferentes.
 - Gere 5 frases que o cliente real diria em Instagram, WhatsApp, YouTube ou conversa com cliente.
 - As frases devem soar reais e nascer das respostas do usuario, nao de frases genericas prontas.
-- O CTA de consultoria deve adaptar esta ideia ao produto gerado em primeira pessoa: agora que a estrategia esta desenhada, eu posso ajudar a transformar isso em um produto pronto para vender, com posicionamento, oferta, pagina e plano de lancamento.
+- Gere exatamente 5 objecoes especificas para o produto criado.
+- Cada objecao deve considerar preco, tempo, aplicacao, tentativas anteriores, confianca no formato, experiencia do usuario ou dificuldade especifica do nicho quando fizer sentido.
+- Cada resposta de objecao deve ser curta, pratica e util para vendas.
+- Em como_vender, nao escreva pagina de vendas nem copy longa. Entregue apenas uma direcao comercial clara e aplicavel.
+- O CTA da consultoria deve vender apenas uma consultoria personalizada para montar um plano de acao de 30 dias.
+- O titulo do CTA deve ser exatamente "Vamos transformar essa estrategia em um plano de acao?"
+- O botao do CTA deve ser exatamente "Quero montar meu plano de acao"
+- O contexto do CTA deve ser personalizado usando produto criado, formato escolhido, principal dor, transformacao e nivel de experiencia.
+- A descricao deve deixar claro que o usuario ja tem uma boa direcao, agora precisa organizar a execucao, e a consultoria transforma a estrategia em um plano personalizado para saber o que fazer, em que ordem executar e quais decisoes priorizar.
+- Nunca mencione acompanhamento de 6 meses.
+- Nao use "Fale comigo" como CTA principal.
+- Use portugues do Brasil, linguagem concreta, sem lero-lero e sem respostas genericas.
 - Responda apenas com JSON. Sem texto adicional.`;
 }
 
@@ -300,13 +337,22 @@ function parseProductResult(text: string): ProductResult {
     typeof parsed.ideia !== "string" ||
     !isThreeStringArray(parsed.nomes) ||
     typeof parsed.promessa !== "string" ||
+    !isStringObject(parsed.mecanismo, ["nome", "explicacao"]) ||
     !isTenStringArray(parsed.beneficios) ||
     !isObjectArray(parsed.perfis_clientes, 3, ["titulo", "descricao"]) ||
     !isFiveStringArray(parsed.frases_cliente) ||
     !isStringArray(parsed.estrutura) ||
+    !isObjectArray(parsed.objecoes, 5, ["objecao", "porque_aparece", "como_responder"]) ||
+    !isStringObject(parsed.como_vender, [
+      "angulo_principal",
+      "problema_de_entrada",
+      "transformacao_destacada",
+      "prova_recomendada",
+      "cta_recomendado",
+    ]) ||
     typeof parsed.preco !== "string" ||
     typeof parsed.proximo_passo !== "string" ||
-    typeof parsed.cta_consultoria !== "string"
+    !isStringObject(parsed.cta_consultoria, ["titulo", "contexto", "descricao", "botao"])
   ) {
     throw new Error("Gemini product response does not match the expected schema.");
   }
@@ -317,13 +363,16 @@ function parseProductResult(text: string): ProductResult {
     ideia: parsed.ideia,
     nomes: parsed.nomes,
     promessa: parsed.promessa,
+    mecanismo: parsed.mecanismo as ProductResult["mecanismo"],
     beneficios: parsed.beneficios,
     perfis_clientes: parsed.perfis_clientes as ProductResult["perfis_clientes"],
     frases_cliente: parsed.frases_cliente,
     estrutura: parsed.estrutura,
+    objecoes: parsed.objecoes as ProductResult["objecoes"],
+    como_vender: parsed.como_vender as ProductResult["como_vender"],
     preco: parsed.preco,
     proximo_passo: parsed.proximo_passo,
-    cta_consultoria: parsed.cta_consultoria,
+    cta_consultoria: parsed.cta_consultoria as ProductResult["cta_consultoria"],
   };
 }
 
@@ -354,6 +403,15 @@ function isObjectArray(value: unknown, length: number, keys: string[]) {
       !Array.isArray(item) &&
       keys.every((key) => typeof (item as Record<string, unknown>)[key] === "string"),
     )
+  );
+}
+
+function isStringObject(value: unknown, keys: string[]) {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    keys.every((key) => typeof (value as Record<string, unknown>)[key] === "string")
   );
 }
 

@@ -161,12 +161,13 @@ function normalizeSavedProductResult(value: unknown): SavedProductResult {
 
 function normalizeProductResult(value: unknown): ProductResult {
   const parsed = typeof value === "string" ? parseJson(value) : value;
+  const migrated = migrateLegacyProductResult(parsed);
 
-  if (!isProductResult(parsed)) {
+  if (!isProductResult(migrated)) {
     throw new Error("Saved generated_result does not match the expected product schema.");
   }
 
-  return parsed;
+  return migrated;
 }
 
 function parseJson(value: string): unknown {
@@ -175,6 +176,86 @@ function parseJson(value: string): unknown {
   } catch {
     return null;
   }
+}
+
+function migrateLegacyProductResult(value: unknown): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  const result = value as Partial<ProductResult> & {
+    cta_consultoria?: unknown;
+  };
+  const ideia = isFilledString(result.ideia) ? result.ideia : "produto digital";
+  const promessa = isFilledString(result.promessa)
+    ? result.promessa
+    : "uma transformacao clara para o cliente certo";
+  const primeiroModulo = Array.isArray(result.estrutura) && isFilledString(result.estrutura[0])
+    ? result.estrutura[0]
+    : "um caminho simples de execucao";
+
+  return {
+    ...result,
+    mecanismo: isStringObject(result.mecanismo, ["nome", "explicacao"])
+      ? result.mecanismo
+      : {
+          nome: "Metodo de execucao guiada",
+          explicacao: `O produto organiza ${primeiroModulo.toLowerCase()} em um caminho pratico para entregar ${promessa.toLowerCase()}.`,
+        },
+    objecoes: isObjectArray(result.objecoes, ["objecao", "porque_aparece", "como_responder"], 5)
+      ? result.objecoes
+      : [
+          {
+            objecao: "Nao sei se isso e para mim",
+            porque_aparece: "O cliente ainda nao conectou a propria dor com a proposta do produto.",
+            como_responder: "Mostre claramente para quem o produto foi criado e qual problema ele resolve primeiro.",
+          },
+          {
+            objecao: "Nao tenho tempo",
+            porque_aparece: "A pessoa teme comprar algo que exija mais rotina do que consegue cumprir.",
+            como_responder: "Explique o formato, o tempo de aplicacao e o primeiro ganho rapido esperado.",
+          },
+          {
+            objecao: "Ja tentei antes e nao funcionou",
+            porque_aparece: "Existe frustracao com solucoes anteriores ou tentativas sem orientacao.",
+            como_responder: "Mostre o mecanismo do produto e por que a ordem da execucao evita o erro anterior.",
+          },
+          {
+            objecao: "Esta caro para mim agora",
+            porque_aparece: "O cliente ainda compara preco, nao custo do problema ou valor da transformacao.",
+            como_responder: "Conecte o preco ao resultado pratico, ao tempo economizado e ao custo de continuar parado.",
+          },
+          {
+            objecao: "Tenho medo de nao conseguir aplicar",
+            porque_aparece: "A pessoa duvida da propria capacidade de transformar informacao em acao.",
+            como_responder: "Reforce passos simples, exemplos e orientacao para sair da teoria com seguranca.",
+          },
+        ],
+    como_vender: isStringObject(result.como_vender, [
+      "angulo_principal",
+      "problema_de_entrada",
+      "transformacao_destacada",
+      "prova_recomendada",
+      "cta_recomendado",
+    ])
+      ? result.como_vender
+      : {
+          angulo_principal: `Venda ${ideia} como uma ponte pratica entre a dor atual e ${promessa.toLowerCase()}.`,
+          problema_de_entrada: "A pessoa sabe que precisa mudar, mas ainda nao tem clareza do primeiro passo.",
+          transformacao_destacada: promessa,
+          prova_recomendada: "Use exemplos, bastidores, antes e depois ou uma pequena demonstracao do metodo.",
+          cta_recomendado: "Convide a pessoa a dar o primeiro passo com uma decisao simples e direta.",
+        },
+    cta_consultoria: isStringObject(result.cta_consultoria, ["titulo", "contexto", "descricao", "botao"])
+      ? result.cta_consultoria
+      : {
+          titulo: "Vamos transformar essa estrategia em um plano de acao?",
+          contexto: `Agora que ${ideia} esta desenhado, o proximo passo e organizar prioridades, oferta e execucao.`,
+          descricao:
+            "Eu posso te ajudar em uma consultoria personalizada para montar um plano de acao de 30 dias e tirar essa estrategia do papel com clareza.",
+          botao: "Quero montar meu plano de acao",
+        },
+  };
 }
 
 function isProductResult(value: unknown): value is ProductResult {
@@ -190,6 +271,7 @@ function isProductResult(value: unknown): value is ProductResult {
     isFilledString(result.ideia) &&
     isStringArray(result.nomes) &&
     isFilledString(result.promessa) &&
+    isStringObject(result.mecanismo, ["nome", "explicacao"]) &&
     isStringArray(result.beneficios) &&
     Array.isArray(result.perfis_clientes) &&
     result.perfis_clientes.length > 0 &&
@@ -202,9 +284,17 @@ function isProductResult(value: unknown): value is ProductResult {
     ) &&
     isStringArray(result.frases_cliente) &&
     isStringArray(result.estrutura) &&
+    isObjectArray(result.objecoes, ["objecao", "porque_aparece", "como_responder"], 5) &&
+    isStringObject(result.como_vender, [
+      "angulo_principal",
+      "problema_de_entrada",
+      "transformacao_destacada",
+      "prova_recomendada",
+      "cta_recomendado",
+    ]) &&
     isFilledString(result.preco) &&
     isFilledString(result.proximo_passo) &&
-    isFilledString(result.cta_consultoria)
+    isStringObject(result.cta_consultoria, ["titulo", "contexto", "descricao", "botao"])
   );
 }
 
@@ -214,4 +304,22 @@ function isStringArray(value: unknown): value is string[] {
 
 function isFilledString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isStringObject(value: unknown, keys: string[]) {
+  return (
+    Boolean(value) &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    keys.every((key) => isFilledString((value as Record<string, unknown>)[key]))
+  );
+}
+
+function isObjectArray(value: unknown, keys: string[], length?: number) {
+  return (
+    Array.isArray(value) &&
+    (length === undefined || value.length === length) &&
+    value.length > 0 &&
+    value.every((item) => isStringObject(item, keys))
+  );
 }

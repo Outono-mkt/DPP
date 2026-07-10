@@ -39,7 +39,10 @@ type ResultBlock = {
   title: string;
   eyebrow: string;
   content: string | string[];
-  action?: "whatsapp";
+  action?: {
+    label: string;
+    fallbackMessage: string;
+  };
 };
 
 const CUSTOM_AUDIENCE = "__custom_audience__";
@@ -1322,13 +1325,22 @@ function ResultScreen({
                 <p className="mt-4 text-sm leading-6 text-white/68">{block.content}</p>
               )}
 
-              {block.action === "whatsapp" ? (
+              {block.action ? (
                 <button
                   className="mt-5 h-11 w-full rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
-                  onClick={() => window.alert("WhatsApp sera conectado em uma etapa futura.")}
+                  onClick={() => {
+                    const whatsappUrl = process.env.NEXT_PUBLIC_WHATSAPP_URL;
+
+                    if (whatsappUrl) {
+                      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+
+                    window.alert(block.action?.fallbackMessage);
+                  }}
                   type="button"
                 >
-                  Quero construir esse produto com você
+                  {block.action.label}
                 </button>
               ) : null}
             </article>
@@ -1383,6 +1395,11 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
     },
     { eyebrow: "A Promessa Principal", title: "O que seu produto promete", content: result.promessa },
     {
+      eyebrow: "Mecanismo Unico",
+      title: result.mecanismo.nome,
+      content: result.mecanismo.explicacao,
+    },
+    {
       eyebrow: "Beneficios que Voce Pode Vender",
       title: "Argumentos concretos para sua oferta",
       content: result.beneficios,
@@ -1398,17 +1415,39 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
       content: result.frases_cliente,
     },
     {
-      eyebrow: "Estrutura do Conteudo",
+      eyebrow: "Estrutura do Produto",
       title: "Seu produto tera a seguinte estrutura",
       content: result.estrutura,
+    },
+    {
+      eyebrow: "Objecoes Principais",
+      title: "O que o cliente pode pensar antes de comprar",
+      content: result.objecoes.map(
+        (objection) =>
+          `${objection.objecao}: ${objection.porque_aparece} Resposta: ${objection.como_responder}`,
+      ),
+    },
+    {
+      eyebrow: "Como Vender Esse Produto",
+      title: "Direcao comercial simples",
+      content: [
+        `Angulo principal: ${result.como_vender.angulo_principal}`,
+        `Problema de entrada: ${result.como_vender.problema_de_entrada}`,
+        `Transformacao destacada: ${result.como_vender.transformacao_destacada}`,
+        `Prova recomendada: ${result.como_vender.prova_recomendada}`,
+        `CTA recomendado: ${result.como_vender.cta_recomendado}`,
+      ],
     },
     { eyebrow: "Preco Sugerido", title: "Preco ideal para lancamento", content: result.preco },
     { eyebrow: "Proximos Passos", title: "Seu produto esta desenhado", content: result.proximo_passo },
     {
-      eyebrow: "Construir comigo",
-      title: "Transforme a estrategia em produto real",
-      content: result.cta_consultoria,
-      action: "whatsapp",
+      eyebrow: result.cta_consultoria.titulo,
+      title: "Consultoria personalizada de 30 dias",
+      content: [result.cta_consultoria.contexto, result.cta_consultoria.descricao],
+      action: {
+        label: result.cta_consultoria.botao,
+        fallbackMessage: "WhatsApp sera conectado em uma etapa futura.",
+      },
     },
   ];
 }

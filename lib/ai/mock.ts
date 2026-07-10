@@ -135,6 +135,11 @@ export const mockProductResult: ProductResult = {
   ],
   promessa:
     "Em 5 dias, organize sua renda variavel, entenda para onde o dinheiro vai e crie um plano simples para guardar dinheiro sem planilhas complicadas.",
+  mecanismo: {
+    nome: "Regra dos 5 dias de dinheiro claro",
+    explicacao:
+      "O desafio combina diagnostico da renda, separacao das contas, regra de distribuicao e checklist de decisao para transformar entradas irregulares em um plano pratico de controle.",
+  },
   beneficios: [
     "Saber quanto pode gastar sem medo de comprometer o mes seguinte",
     "Separar dinheiro pessoal e profissional com uma regra simples",
@@ -178,10 +183,51 @@ export const mockProductResult: ProductResult = {
     "Dia 4: Plano para atravessar meses fracos com mais previsibilidade",
     "Dia 5: Checklist financeiro dos proximos 30 dias",
   ],
+  objecoes: [
+    {
+      objecao: "Nao tenho tempo para organizar minhas financas.",
+      porque_aparece: "O autonomo ja trabalha muito e associa organizacao financeira a planilhas longas.",
+      como_responder: "O desafio foi pensado para uma tarefa curta por dia, sem controle complexo.",
+    },
+    {
+      objecao: "Minha renda varia demais para qualquer metodo funcionar.",
+      porque_aparece: "A pessoa acha que so consegue se organizar quem recebe salario fixo.",
+      como_responder: "A proposta e justamente adaptar a organizacao para entradas irregulares.",
+    },
+    {
+      objecao: "Ja tentei planilha e abandonei.",
+      porque_aparece: "Tentativas anteriores criaram frustracao e baixa confianca.",
+      como_responder: "Aqui o foco e uma regra simples de decisao, com checklist pratico e menos dependencia de planilha.",
+    },
+    {
+      objecao: "Nao sei se vale pagar por algo tao basico.",
+      porque_aparece: "A pessoa compara o produto com conteudos gratuitos soltos.",
+      como_responder: "O valor esta na ordem certa de execucao e na clareza para tomar decisoes sem se perder.",
+    },
+    {
+      objecao: "Tenho medo de descobrir que minha situacao esta pior do que penso.",
+      porque_aparece: "A dor envolve ansiedade e evitacao dos numeros.",
+      como_responder: "O primeiro passo e enxergar a situacao sem julgamento para decidir o proximo movimento.",
+    },
+  ],
+  como_vender: {
+    angulo_principal: "Organizacao financeira para autonomos que nao recebem salario fixo.",
+    problema_de_entrada: "A pessoa vende, trabalha e recebe, mas nao sabe quanto pode gastar nem quanto deveria guardar.",
+    transformacao_destacada: "Sair da confusao mensal para uma regra simples de controle em 5 dias.",
+    prova_recomendada:
+      "Mostrar antes e depois de uma distribuicao simples de renda variavel, com exemplo de mes bom e mes fraco.",
+    cta_recomendado: "Comece hoje criando seu plano financeiro dos proximos 30 dias.",
+  },
   preco:
     "Entre R$37 e R$67 no lancamento inicial, uma faixa baixa para validar a promessa e gerar as primeiras vendas.",
   proximo_passo:
     "Escolha o nome mais forte e transforme cada modulo em uma aula curta. Seu produto ja tem uma promessa clara para sair do papel.",
-  cta_consultoria:
-    "Agora que a estrategia do desafio financeiro esta desenhada, eu posso te ajudar a transformar isso em um produto pronto para vender, com posicionamento, oferta, pagina e plano de lancamento.",
+  cta_consultoria: {
+    titulo: "Vamos transformar essa estrategia em um plano de acao?",
+    contexto:
+      "Voce ja tem uma boa direcao para um desafio financeiro de 5 dias, pensado para autonomos que vivem a instabilidade da renda variavel.",
+    descricao:
+      "Na consultoria personalizada, eu te ajudo a transformar essa estrategia em um plano de acao de 30 dias, definindo o que fazer, em que ordem executar e quais decisoes priorizar para tirar o produto do papel.",
+    botao: "Quero montar meu plano de acao",
+  },
 };
