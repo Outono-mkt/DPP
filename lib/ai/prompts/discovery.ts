@@ -99,7 +99,7 @@ Encontrar opcoes especificas, simples de entender, comercialmente interessantes 
 
 A logica deve ser:
 
-Profissao -> competencia -> transformacao -> mecanismo -> produto -> oferta.
+Profissao -> competencia -> transformacao -> oportunidade -> mecanismo -> produto -> oferta -> execucao.
 
 Nao transforme profissao em produto.
 
@@ -110,6 +110,13 @@ Descubra o ativo principal da pessoa:
 - resultado que ela ja consegue produzir;
 - problema que resolve naturalmente;
 - situacao concreta em que ela consegue ajudar melhor.
+
+Antes de recomendar formato, responda internamente:
+
+- O que essa pessoa faz melhor que outras?
+- O que ela consegue ensinar facilmente?
+- Qual transformacao ela gera?
+- O que as pessoas pagariam para aprender?
 
 Gere:
 
@@ -164,7 +171,7 @@ Transformacao ja escolhida: ${regeneration.selectedTransformation ?? "ainda nao 
 
 Antes de gerar, pense na cadeia:
 
-Profissao -> competencia -> transformacao -> mecanismo -> produto -> oferta.
+Profissao -> competencia -> transformacao -> oportunidade -> mecanismo -> produto -> oferta -> execucao.
 
 Nao gere uma variacao cosmetica.
 

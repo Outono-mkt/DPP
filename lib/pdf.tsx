@@ -109,6 +109,13 @@ function ProductResultDocument({
         </View>
       </Page>
 
+      <Page size="A4" style={styles.page}>
+        <RunningFooter generatedDate={generatedDate} />
+        <Text style={styles.pageEyebrow}>Decisao estrategica</Text>
+        <Text style={styles.pageTitle}>Por que este produto?</Text>
+        <ReasonGrid reasons={getProductChoiceReasons(result, format)} />
+      </Page>
+
       <Page size="A4" style={styles.page} wrap>
         <RunningFooter generatedDate={generatedDate} />
         <Text style={styles.pageEyebrow}>Seções estratégicas</Text>
@@ -124,6 +131,13 @@ function ProductResultDocument({
             {section.children}
           </StrategicSectionBlock>
         ))}
+      </Page>
+
+      <Page size="A4" style={styles.page}>
+        <RunningFooter generatedDate={generatedDate} />
+        <Text style={styles.pageEyebrow}>Execucao</Text>
+        <Text style={styles.pageTitle}>Checklist Executivo</Text>
+        <ExecutiveChecklist items={getExecutiveChecklist(format)} />
       </Page>
 
       <Page size="A4" style={[styles.finalPage, styles.darkPage]}>
@@ -364,9 +378,9 @@ function SalesPlan({ plan }: { plan: ProductResult["como_vender"] }) {
 
 function ExecutionChecklist({ groups }: { groups: ProductResult["plano_execucao"] }) {
   return (
-    <View style={styles.cardStack}>
-      {groups.map((group) => (
-        <View key={group.etapa} style={styles.checklistGroup} wrap={false}>
+    <View style={styles.roadmapFlow}>
+      {groups.map((group, index) => (
+        <View key={group.etapa} style={styles.roadmapStep} wrap={false}>
           <Text style={styles.cardTitle}>{group.etapa}</Text>
           <View style={styles.cardStack}>
             {group.itens.map((item) => (
@@ -376,6 +390,33 @@ function ExecutionChecklist({ groups }: { groups: ProductResult["plano_execucao"
               </View>
             ))}
           </View>
+          {index < groups.length - 1 ? <Text style={styles.roadmapArrow}>v</Text> : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ReasonGrid({ reasons }: { reasons: string[] }) {
+  return (
+    <View style={styles.reasonGrid}>
+      {reasons.map((reason, index) => (
+        <View key={reason} style={styles.reasonCard} wrap={false}>
+          <Text style={styles.reasonIndex}>{String(index + 1).padStart(2, "0")}</Text>
+          <Text style={styles.reasonText}>{reason}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ExecutiveChecklist({ items }: { items: string[] }) {
+  return (
+    <View style={styles.executiveChecklist}>
+      {items.map((item) => (
+        <View key={item} style={styles.executiveChecklistItem} wrap={false}>
+          <Text style={styles.executiveCheckbox}> </Text>
+          <Text style={styles.executiveChecklistText}>{item}</Text>
         </View>
       ))}
     </View>
@@ -495,6 +536,98 @@ function formatDate(value: string) {
 
 function removeDiacritics(text: string) {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function getProductChoiceReasons(result: ProductResult, format: string) {
+  return [
+    `Resolve uma dor urgente: ${result.nicho}`,
+    `Aproveita a competencia central por tras de: ${result.promessa}`,
+    `Nasce de um mecanismo claro: ${result.mecanismo.nome}`,
+    `Pode ser produzido rapidamente no formato ${format}`,
+    "Possui valor percebido porque entrega uma transformacao especifica",
+    `Abre caminho para proximas ofertas a partir de ${result.nomes[0]}`,
+  ];
+}
+
+function getExecutiveChecklist(format: string) {
+  const normalizedFormat = removeDiacritics(format).toLowerCase();
+
+  if (normalizedFormat.includes("mentoria")) {
+    return [
+      "Validar promessa com potenciais mentorados",
+      "Validar preco da primeira turma",
+      "Criar roteiro dos encontros",
+      "Preparar material de apoio",
+      "Configurar checkout",
+      "Criar pagina ou mensagem de convite",
+      "Publicar agenda de inscricoes",
+      "Convidar os primeiros contatos",
+      "Registrar objecoes dos interessados",
+      "Fechar a primeira vaga",
+    ];
+  }
+
+  if (normalizedFormat.includes("ebook") || normalizedFormat.includes("pdf")) {
+    return [
+      "Validar promessa do material",
+      "Validar preco do ebook",
+      "Criar sumario executivo",
+      "Produzir conteudo principal",
+      "Revisar exemplos e checklists",
+      "Diagramar arquivo final",
+      "Configurar checkout",
+      "Criar pagina ou mensagem de venda",
+      "Divulgar para os primeiros contatos",
+      "Realizar a primeira venda",
+    ];
+  }
+
+  if (normalizedFormat.includes("curso") || normalizedFormat.includes("aula")) {
+    return [
+      "Validar promessa do curso",
+      "Validar preco da primeira versao",
+      "Criar roteiro das aulas",
+      "Gravar os blocos essenciais",
+      "Revisar audio, video e ordem das aulas",
+      "Publicar area de entrega",
+      "Configurar checkout",
+      "Criar pagina ou mensagem de venda",
+      "Divulgar para os primeiros contatos",
+      "Realizar a primeira venda",
+    ];
+  }
+
+  if (
+    normalizedFormat.includes("saas") ||
+    normalizedFormat.includes("sistema") ||
+    normalizedFormat.includes("ferramenta")
+  ) {
+    return [
+      "Validar problema principal",
+      "Validar preco da primeira versao",
+      "Desenhar fluxo minimo da ferramenta",
+      "Criar MVP com a funcao central",
+      "Testar com usuarios reais",
+      "Revisar entrega inicial",
+      "Configurar checkout ou acesso",
+      "Criar pagina ou mensagem de venda",
+      "Convidar os primeiros usuarios",
+      "Fechar o primeiro cliente",
+    ];
+  }
+
+  return [
+    "Validar promessa com pessoas do publico escolhido",
+    "Validar preco antes de finalizar a oferta",
+    "Criar estrutura principal do produto",
+    "Produzir conteudo essencial",
+    "Revisar entrega e exemplos",
+    "Configurar checkout",
+    "Criar pagina ou mensagem de venda",
+    "Publicar primeira versao",
+    "Divulgar para os primeiros contatos",
+    "Realizar a primeira venda",
+  ];
 }
 
 function validateProductResultForPdf(result: ProductResult) {
@@ -864,6 +997,26 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 12,
   },
+  roadmapFlow: {
+    gap: 14,
+  },
+  roadmapStep: {
+    backgroundColor: COLORS.white,
+    borderColor: COLORS.gold,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 8,
+    padding: 12,
+    position: "relative",
+  },
+  roadmapArrow: {
+    alignSelf: "center",
+    color: COLORS.gold,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 12,
+    marginBottom: -10,
+    marginTop: 2,
+  },
   checklistItem: {
     alignItems: "flex-start",
     flexDirection: "row",
@@ -876,6 +1029,58 @@ const styles = StyleSheet.create({
     height: 10,
     marginTop: 2,
     width: 10,
+  },
+  reasonGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  reasonCard: {
+    backgroundColor: COLORS.white,
+    borderColor: COLORS.line,
+    borderRadius: 6,
+    borderWidth: 1,
+    minHeight: 92,
+    padding: 14,
+    width: 241,
+  },
+  reasonIndex: {
+    color: COLORS.gold,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 12,
+    marginBottom: 9,
+  },
+  reasonText: {
+    color: COLORS.ink,
+    fontSize: 10.5,
+    lineHeight: 1.42,
+  },
+  executiveChecklist: {
+    backgroundColor: COLORS.white,
+    borderColor: COLORS.line,
+    borderRadius: 7,
+    borderWidth: 1,
+    gap: 10,
+    padding: 18,
+  },
+  executiveChecklistItem: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 10,
+  },
+  executiveCheckbox: {
+    borderColor: COLORS.gold,
+    borderRadius: 2,
+    borderWidth: 1,
+    height: 11,
+    marginTop: 2,
+    width: 11,
+  },
+  executiveChecklistText: {
+    color: COLORS.ink,
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 1.35,
   },
   statusItem: {
     alignItems: "center",
