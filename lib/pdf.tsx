@@ -128,7 +128,7 @@ function ProductResultDocument({
 
       <Page size="A4" style={[styles.finalPage, styles.darkPage]}>
         <View style={styles.finalPanel}>
-          <Text style={styles.finalTitle}>Vamos transformar essa estratégia em um plano de ação?</Text>
+          <Text style={styles.finalTitle}>{result.cta_consultoria.titulo}</Text>
           <Text style={styles.finalText}>{result.cta_consultoria.contexto}</Text>
           <Text style={styles.finalText}>{result.cta_consultoria.descricao}</Text>
           {whatsappUrl ? (
@@ -240,6 +240,16 @@ function getStrategicSections(result: ProductResult, selectedFormat: string): St
       title: "Próximos Passos",
       children: <Paragraph>{result.proximo_passo}</Paragraph>,
     },
+    {
+      title: "Plano de Execucao",
+      minPresenceAhead: 190,
+      children: <ExecutionChecklist groups={result.plano_execucao} />,
+    },
+    {
+      title: "Status do Projeto",
+      minPresenceAhead: 150,
+      children: <ProjectStatus items={result.status_projeto} />,
+    },
   ];
 }
 
@@ -350,6 +360,51 @@ function SalesPlan({ plan }: { plan: ProductResult["como_vender"] }) {
       ))}
     </View>
   );
+}
+
+function ExecutionChecklist({ groups }: { groups: ProductResult["plano_execucao"] }) {
+  return (
+    <View style={styles.cardStack}>
+      {groups.map((group) => (
+        <View key={group.etapa} style={styles.checklistGroup} wrap={false}>
+          <Text style={styles.cardTitle}>{group.etapa}</Text>
+          <View style={styles.cardStack}>
+            {group.itens.map((item) => (
+              <View key={item} style={styles.checklistItem}>
+                <Text style={styles.checkbox}> </Text>
+                <Text style={styles.paragraph}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ProjectStatus({ items }: { items: ProductResult["status_projeto"] }) {
+  return (
+    <View style={styles.twoColumnGrid}>
+      {items.map((item) => (
+        <View key={item.etapa} style={styles.statusItem} wrap={false}>
+          <Text style={getStatusDotStyle(item.status)}>{getStatusLabel(item.status)}</Text>
+          <Text style={styles.benefitText}>{item.etapa}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function getStatusDotStyle(status: ProductResult["status_projeto"][number]["status"]) {
+  if (status === "concluido") return styles.statusDone;
+  if (status === "em_andamento") return styles.statusCurrent;
+  return styles.statusPending;
+}
+
+function getStatusLabel(status: ProductResult["status_projeto"][number]["status"]) {
+  if (status === "concluido") return "OK";
+  if (status === "em_andamento") return "EM";
+  return "--";
 }
 
 function SummaryCard({ title, value, wide = false }: { title: string; value: string; wide?: boolean }) {
@@ -470,6 +525,8 @@ function validateProductResultForPdf(result: ProductResult) {
     result.frases_cliente,
     result.estrutura,
     result.objecoes,
+    result.plano_execucao,
+    result.status_projeto,
   ];
 
   if (
@@ -798,6 +855,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 8,
     padding: 13,
+  },
+  checklistGroup: {
+    backgroundColor: COLORS.white,
+    borderColor: COLORS.line,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 8,
+    padding: 12,
+  },
+  checklistItem: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 8,
+  },
+  checkbox: {
+    borderColor: COLORS.gold,
+    borderRadius: 2,
+    borderWidth: 1,
+    height: 10,
+    marginTop: 2,
+    width: 10,
+  },
+  statusItem: {
+    alignItems: "center",
+    backgroundColor: COLORS.white,
+    borderColor: COLORS.line,
+    borderRadius: 5,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    padding: 9,
+    width: 215,
+  },
+  statusDone: {
+    color: "#237a4b",
+    fontFamily: "Helvetica-Bold",
+    fontSize: 11,
+    width: 12,
+  },
+  statusCurrent: {
+    color: COLORS.gold,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 11,
+    width: 12,
+  },
+  statusPending: {
+    color: COLORS.muted,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 11,
+    width: 12,
   },
   field: {
     gap: 3,

@@ -14,6 +14,7 @@ import type {
 
 type Step = "access" | "dashboard" | "creation" | "loading" | "result" | "savedResult";
 type LoadingMode = "discovery" | "product";
+type DiscoveryStage = "audience" | "pain" | "transformation" | "format";
 
 type QuestionOption = {
   label: string;
@@ -40,6 +41,7 @@ type ResultBlock = {
   title: string;
   eyebrow: string;
   content: string | string[];
+  variant?: "default" | "checklist" | "status";
   action?: {
     label: string;
     fallbackMessage: string;
@@ -67,6 +69,13 @@ const initialCustomAnswers: CustomAnswers = {
   transformation: "",
 };
 
+const initialRegenerationLimits: Record<DiscoveryStage, number> = {
+  audience: 3,
+  pain: 3,
+  transformation: 3,
+  format: 3,
+};
+
 const experienceOptions: QuestionOption[] = [
   { label: "Nunca criei nada", value: "Nunca criei nada" },
   { label: "Ja tentei mas nao vendi", value: "Ja tentei mas nao vendi" },
@@ -87,6 +96,8 @@ export function ProductProntoFlow() {
   const [answers, setAnswers] = useState<OnboardingAnswers>(initialAnswers);
   const [customAnswers, setCustomAnswers] = useState<CustomAnswers>(initialCustomAnswers);
   const [discoveryResult, setDiscoveryResult] = useState<DiscoveryResult | null>(null);
+  const [regenerationLimits, setRegenerationLimits] = useState(initialRegenerationLimits);
+  const [regeneratingStage, setRegeneratingStage] = useState<DiscoveryStage | null>(null);
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [loadingMode, setLoadingMode] = useState<LoadingMode>("product");
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
@@ -108,6 +119,8 @@ export function ProductProntoFlow() {
     setCustomAnswers(initialCustomAnswers);
     setCurrentQuestion(0);
     setDiscoveryResult(null);
+    setRegenerationLimits(initialRegenerationLimits);
+    setRegeneratingStage(null);
     setCopiedBlock(null);
     setFlowError(null);
     setGenerationResult(null);
@@ -255,6 +268,43 @@ export function ProductProntoFlow() {
     } catch {
       setFlowError("Nao conseguimos gerar sugestoes agora. Revise suas respostas e tente novamente.");
       setStep("creation");
+    }
+  }
+
+  async function regenerateDiscoveryStage(stage: DiscoveryStage) {
+    if (!discoveryResult || regenerationLimits[stage] <= 0) {
+      return;
+    }
+
+    setRegeneratingStage(stage);
+    setFlowError(null);
+
+    try {
+      const result = await requestDiscovery({
+        profile: answers.profile,
+        targetAudienceDescription: answers.targetAudienceDescription,
+        regeneration: {
+          stage,
+          selectedAudience: resolveCustomValue(answers.selectedAudience, CUSTOM_AUDIENCE, customAnswers.audience),
+          selectedPain: resolveCustomValue(answers.selectedPain, CUSTOM_PAIN, customAnswers.pain),
+          selectedTransformation: resolveCustomValue(
+            answers.selectedTransformation,
+            CUSTOM_TRANSFORMATION,
+            customAnswers.transformation,
+          ),
+          previousSuggestions: getPreviousSuggestionTitles(discoveryResult, stage),
+        },
+      });
+
+      setDiscoveryResult((current) => mergeDiscoveryStage(current, result, stage));
+      setRegenerationLimits((current) => ({
+        ...current,
+        [stage]: Math.max(current[stage] - 1, 0),
+      }));
+    } catch {
+      setFlowError("Nao conseguimos gerar novas sugestoes agora. Tente novamente em alguns instantes.");
+    } finally {
+      setRegeneratingStage(null);
     }
   }
 
@@ -454,9 +504,12 @@ export function ProductProntoFlow() {
             error={flowError}
             onBack={goBack}
             onForward={goForward}
+            onRegenerate={regenerateDiscoveryStage}
             onUpdateAnswer={updateAnswer}
             onUpdateCustomAnswer={updateCustomAnswer}
             progress={progress}
+            regenerationLimits={regenerationLimits}
+            regeneratingStage={regeneratingStage}
           />
         )}
         {isAuthenticated && step === "loading" && (
@@ -654,6 +707,29 @@ function resolveCustomValue(value: string, marker: string, customValue: string) 
   return value === marker ? customValue.trim() : value;
 }
 
+function getPreviousSuggestionTitles(result: DiscoveryResult, stage: DiscoveryStage) {
+  if (stage === "audience") return result.publicos.map((item) => item.titulo);
+  if (stage === "pain") return result.dores.map((item) => item.titulo);
+  if (stage === "transformation") return result.transformacoes.map((item) => item.titulo);
+  return result.formatos.map((item) => item.nome || item.titulo);
+}
+
+function mergeDiscoveryStage(
+  current: DiscoveryResult | null,
+  next: DiscoveryResult,
+  stage: DiscoveryStage,
+): DiscoveryResult {
+  if (!current) return next;
+
+  return {
+    ...current,
+    ...(stage === "audience" ? { publicos: next.publicos } : {}),
+    ...(stage === "pain" ? { dores: next.dores } : {}),
+    ...(stage === "transformation" ? { transformacoes: next.transformacoes } : {}),
+    ...(stage === "format" ? { formatos: next.formatos } : {}),
+  };
+}
+
 function AccessScreen({
   error,
   isSubmitting,
@@ -735,9 +811,12 @@ function OnboardingScreen({
   error,
   onBack,
   onForward,
+  onRegenerate,
   onUpdateAnswer,
   onUpdateCustomAnswer,
   progress,
+  regenerationLimits,
+  regeneratingStage,
 }: {
   answers: OnboardingAnswers;
   currentQuestion: number;
@@ -746,9 +825,12 @@ function OnboardingScreen({
   error: string | null;
   onBack: () => void;
   onForward: () => void;
+  onRegenerate: (stage: DiscoveryStage) => Promise<void>;
   onUpdateAnswer: (id: keyof OnboardingAnswers, value: string) => void;
   onUpdateCustomAnswer: (id: keyof CustomAnswers, value: string) => void;
   progress: number;
+  regenerationLimits: Record<DiscoveryStage, number>;
+  regeneratingStage: DiscoveryStage | null;
 }) {
   const canContinue = canContinueFromStep(currentQuestion, answers, customAnswers);
 
@@ -785,8 +867,11 @@ function OnboardingScreen({
           currentQuestion,
           customAnswers,
           discoveryResult,
+          onRegenerate,
           onUpdateAnswer,
           onUpdateCustomAnswer,
+          regenerationLimits,
+          regeneratingStage,
         })}
 
         {error ? (
@@ -823,15 +908,21 @@ function renderOnboardingStep({
   currentQuestion,
   customAnswers,
   discoveryResult,
+  onRegenerate,
   onUpdateAnswer,
   onUpdateCustomAnswer,
+  regenerationLimits,
+  regeneratingStage,
 }: {
   answers: OnboardingAnswers;
   currentQuestion: number;
   customAnswers: CustomAnswers;
   discoveryResult: DiscoveryResult | null;
+  onRegenerate: (stage: DiscoveryStage) => Promise<void>;
   onUpdateAnswer: (id: keyof OnboardingAnswers, value: string) => void;
   onUpdateCustomAnswer: (id: keyof CustomAnswers, value: string) => void;
+  regenerationLimits: Record<DiscoveryStage, number>;
+  regeneratingStage: DiscoveryStage | null;
 }) {
   if (currentQuestion === 0) {
     return (
@@ -858,18 +949,23 @@ function renderOnboardingStep({
   if (currentQuestion === 2) {
     return (
       <CardStep
-        customLabel="Nenhuma dessas. Quero descrever meu publico."
+        customLabel="Escrever meu proprio publico"
         customPlaceholder="Descreva seu publico com suas palavras"
         customValue={customAnswers.audience}
         helper="Escolha o caminho com mais potencial para o seu produto."
         items={(discoveryResult?.publicos ?? []).map((item) => ({
           title: item.titulo,
-          description: `${item.descricao} ${item.porque_escolher}`,
+          description: item.descricao,
+          why: item.porque,
+          tradeoff: item.tradeoff,
           value: item.titulo,
         }))}
         marker={CUSTOM_AUDIENCE}
         onChange={(value) => onUpdateAnswer("selectedAudience", value)}
         onCustomChange={(value) => onUpdateCustomAnswer("audience", value)}
+        onRegenerate={() => onRegenerate("audience")}
+        regenerationRemaining={regenerationLimits.audience}
+        regenerating={regeneratingStage === "audience"}
         selectedValue={answers.selectedAudience}
         title="Escolha seu melhor publico"
       />
@@ -879,18 +975,23 @@ function renderOnboardingStep({
   if (currentQuestion === 3) {
     return (
       <CardStep
-        customLabel="Quero descrever a dor com minhas palavras."
+        customLabel="Escrever minha propria dor"
         customPlaceholder="Descreva a dor principal"
         customValue={customAnswers.pain}
         helper="A dor certa deixa a promessa do produto mais clara e desejada."
         items={(discoveryResult?.dores ?? []).map((item) => ({
           title: item.titulo,
-          description: `${item.descricao} Urgencia: ${item.urgencia}. Frase real: "${item.frases_reais[0]}"`,
+          description: `${item.descricao} Frase real: "${item.frases_reais[0]}"`,
+          why: item.porque,
+          tradeoff: item.tradeoff,
           value: item.titulo,
         }))}
         marker={CUSTOM_PAIN}
         onChange={(value) => onUpdateAnswer("selectedPain", value)}
         onCustomChange={(value) => onUpdateCustomAnswer("pain", value)}
+        onRegenerate={() => onRegenerate("pain")}
+        regenerationRemaining={regenerationLimits.pain}
+        regenerating={regeneratingStage === "pain"}
         selectedValue={answers.selectedPain}
         title="Escolha a dor principal"
       />
@@ -900,18 +1001,23 @@ function renderOnboardingStep({
   if (currentQuestion === 4) {
     return (
       <CardStep
-        customLabel="Quero descrever a transformacao com minhas palavras."
+        customLabel="Escrever minha propria transformacao"
         customPlaceholder="Descreva a transformacao desejada"
         customValue={customAnswers.transformation}
         helper="Escolha o resultado que seu aluno mais gostaria de conquistar."
         items={(discoveryResult?.transformacoes ?? []).map((item) => ({
           title: item.titulo,
-          description: `${item.descricao} Resultado final: ${item.resultado_final}`,
+          description: item.descricao,
+          why: item.porque,
+          tradeoff: item.tradeoff,
           value: item.titulo,
         }))}
         marker={CUSTOM_TRANSFORMATION}
         onChange={(value) => onUpdateAnswer("selectedTransformation", value)}
         onCustomChange={(value) => onUpdateCustomAnswer("transformation", value)}
+        onRegenerate={() => onRegenerate("transformation")}
+        regenerationRemaining={regenerationLimits.transformation}
+        regenerating={regeneratingStage === "transformation"}
         selectedValue={answers.selectedTransformation}
         title="Escolha a transformacao"
       />
@@ -935,10 +1041,23 @@ function renderOnboardingStep({
       helper="Analisando seu conhecimento e seu objetivo, estes sao os formatos com melhor encaixe para comecar rapido sem perder estrategia."
       items={(discoveryResult?.formatos ?? []).map((item) => ({
         title: item.nome,
-        description: `${item.motivo} ${item.porque_esse_formato}`,
+        description: item.descricao,
+        why: item.porque,
+        tradeoff: item.tradeoff,
+        meta: [
+          `Tempo estimado: ${item.tempo_medio}`,
+          `Dificuldade: ${item.dificuldade}`,
+          `Ticket: ${item.ticket_recomendado}`,
+          `Ideal para: ${item.perfil_ideal}`,
+          `Potencial de escala: ${item.potencial_escala}`,
+          `${"★".repeat(Math.max(1, Math.min(item.avaliacao, 5)))}${"☆".repeat(Math.max(0, 5 - Math.min(item.avaliacao, 5)))}`,
+        ],
         value: item.nome,
       }))}
       onChange={(value) => onUpdateAnswer("selectedFormat", value)}
+      onRegenerate={() => onRegenerate("format")}
+      regenerationRemaining={regenerationLimits.format}
+      regenerating={regeneratingStage === "format"}
       selectedValue={answers.selectedFormat}
       title="Escolha o formato recomendado"
     />
@@ -1023,6 +1142,9 @@ function CardStep({
   marker,
   onChange,
   onCustomChange,
+  onRegenerate,
+  regenerationRemaining,
+  regenerating = false,
   selectedValue,
   title,
 }: {
@@ -1030,10 +1152,20 @@ function CardStep({
   customPlaceholder?: string;
   customValue?: string;
   helper: string;
-  items: Array<{ title: string; description: string; value: string }>;
+  items: Array<{
+    title: string;
+    description: string;
+    value: string;
+    why: string;
+    tradeoff: string;
+    meta?: string[];
+  }>;
   marker?: string;
   onChange: (value: string) => void;
   onCustomChange?: (value: string) => void;
+  onRegenerate?: () => Promise<void>;
+  regenerationRemaining?: number;
+  regenerating?: boolean;
   selectedValue: string;
   title: string;
 }) {
@@ -1045,10 +1177,14 @@ function CardStep({
         {items.map((item) => (
           <ChoiceCard
             description={item.description}
+            featured={items.indexOf(item) === 0}
             key={item.value}
+            meta={item.meta}
             onClick={() => onChange(item.value)}
+            tradeoff={item.tradeoff}
             selected={selectedValue === item.value}
             title={item.title}
+            why={item.why}
           />
         ))}
 
@@ -1056,9 +1192,12 @@ function CardStep({
           <div className="space-y-3">
             <ChoiceCard
               description="Use esta opcao se nenhuma sugestao representar bem o que voce quer criar."
+              featured={false}
               onClick={() => onChange(marker)}
               selected={selectedValue === marker}
               title={customLabel}
+              tradeoff="Voce ganha controle, mas perde a analise comparativa da IA sobre os caminhos mais faceis de vender."
+              why="Esta opcao e util quando voce ja conhece muito bem o publico que quer atender."
             />
             {selectedValue === marker ? (
               <textarea
@@ -1071,34 +1210,108 @@ function CardStep({
           </div>
         ) : null}
       </div>
+      {onRegenerate && regenerationRemaining !== undefined ? (
+        <div className="mt-6 rounded-[22px] border border-black/10 bg-white px-4 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-ink">Novas sugestoes</p>
+              <div className="mt-2 flex gap-2" aria-label={`${regenerationRemaining} regeneracoes restantes`}>
+                {[0, 1, 2].map((index) => (
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full ${
+                      index < regenerationRemaining ? "bg-accent" : "bg-black/15"
+                    }`}
+                    key={index}
+                  />
+                ))}
+              </div>
+              {regenerationRemaining === 0 ? (
+                <p className="mt-2 text-sm leading-5 text-[#66635B]">
+                  Voce atingiu o limite de novas sugestoes desta etapa.
+                </p>
+              ) : null}
+            </div>
+            <button
+              className="h-11 rounded-full border border-black/12 px-5 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={regenerationRemaining === 0 || regenerating}
+              onClick={() => void onRegenerate()}
+              type="button"
+            >
+              {regenerating ? "Gerando..." : "Gerar novas sugestoes"}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
 function ChoiceCard({
   description,
+  featured = false,
+  meta,
   onClick,
   selected,
   title,
+  tradeoff,
+  why,
 }: {
   description: string;
+  featured?: boolean;
+  meta?: string[];
   onClick: () => void;
   selected: boolean;
   title: string;
+  tradeoff: string;
+  why: string;
 }) {
   return (
-    <button
+    <article
       className={`rounded-[24px] border p-5 text-left transition ${
         selected
           ? "border-accent bg-[#FBF5DE] text-ink shadow-md shadow-accent/10"
-          : "border-black/10 bg-white text-[#56534D] hover:border-[#8B7334] hover:text-ink"
+          : featured
+            ? "border-accent bg-white text-[#56534D] shadow-lg shadow-accent/10"
+            : "border-black/10 bg-white text-[#56534D]"
       }`}
-      onClick={onClick}
-      type="button"
     >
-      <span className="block text-base font-semibold text-ink">{title}</span>
-      <span className="mt-2 block text-sm leading-6 text-[#66635B]">{description}</span>
-    </button>
+      {featured ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-[#0D0D0D]">
+            Minha recomendacao
+          </span>
+          <span className="rounded-full border border-accent/30 px-3 py-1 text-xs font-semibold text-[#8B7334]">
+            Mais recomendada
+          </span>
+        </div>
+      ) : null}
+      <h3 className="text-base font-semibold text-ink">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-[#66635B]">{description}</p>
+      <div className="mt-4 grid gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8B7334]">Por que escolhi</p>
+          <p className="mt-1 text-sm leading-6 text-[#56534D]">{why}</p>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8B7334]">Trade-off</p>
+          <p className="mt-1 text-sm leading-6 text-[#56534D]">{tradeoff}</p>
+        </div>
+      </div>
+      {meta?.length ? (
+        <ul className="mt-4 grid gap-2 text-sm leading-5 text-[#56534D]">
+          {meta.map((item) => (
+            <li className="rounded-2xl bg-[#F3F1EB] px-3 py-2" key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : null}
+      <button
+        className="mt-5 h-11 w-full rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C]"
+        onClick={onClick}
+        type="button"
+      >
+        Escolher esta opcao
+      </button>
+    </article>
   );
 }
 
@@ -1485,13 +1698,7 @@ function ResultScreen({
                   </div>
 
                   {Array.isArray(block.content) ? (
-                    <ul className="mt-5 grid gap-3 text-sm leading-6 text-[#56534D] md:grid-cols-2">
-                      {block.content.map((item) => (
-                        <li className="rounded-[18px] bg-[#F3F1EB] px-4 py-3" key={item}>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
+                    <ResultBlockList block={block} />
                   ) : (
                     <p className="mt-5 text-sm leading-7 text-[#56534D]">{block.content}</p>
                   )}
@@ -1541,6 +1748,65 @@ function ResultScreen({
       ) : null}
 
     </section>
+  );
+}
+
+function ResultBlockList({ block }: { block: ResultBlock }) {
+  if (!Array.isArray(block.content)) {
+    return null;
+  }
+
+  if (block.variant === "checklist") {
+    return (
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {block.content.map((group) => {
+          const [title = "Etapa", ...items] = group.split("||");
+
+          return (
+            <div className="rounded-[20px] bg-[#F3F1EB] p-4" key={group}>
+              <h3 className="font-semibold text-ink">{title}</h3>
+              <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#56534D]">
+                {items.map((item) => (
+                  <li className="flex gap-3" key={item}>
+                    <span className="mt-1.5 h-4 w-4 shrink-0 rounded border border-[#8B7334]" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (block.variant === "status") {
+    return (
+      <ul className="mt-5 grid gap-3 md:grid-cols-2">
+        {block.content.map((item) => {
+          const [status = "pendente", label = item] = item.split("||");
+          const marker = status === "concluido" ? "●" : status === "em_andamento" ? "●" : "○";
+          const color = status === "concluido" ? "text-emerald-700" : status === "em_andamento" ? "text-[#8B7334]" : "text-[#8A8983]";
+
+          return (
+            <li className="flex items-center gap-3 rounded-[18px] bg-[#F3F1EB] px-4 py-3" key={item}>
+              <span className={`text-lg ${color}`}>{marker}</span>
+              <span className="text-sm font-semibold text-[#56534D]">{label}</span>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return (
+    <ul className="mt-5 grid gap-3 text-sm leading-6 text-[#56534D] md:grid-cols-2">
+      {block.content.map((item) => (
+        <li className="rounded-[18px] bg-[#F3F1EB] px-4 py-3" key={item}>
+          {item}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -1630,6 +1896,18 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
     },
     { eyebrow: "Preco Sugerido", title: "Preco ideal para lancamento", content: result.preco },
     { eyebrow: "Proximos Passos", title: "Seu produto esta desenhado", content: result.proximo_passo },
+    {
+      eyebrow: "Plano de Execucao",
+      title: "Checklist para tirar do papel",
+      content: result.plano_execucao.map((group) => `${group.etapa}||${group.itens.join("||")}`),
+      variant: "checklist",
+    },
+    {
+      eyebrow: "Status do Projeto",
+      title: "O que ja esta pronto e o que vem agora",
+      content: result.status_projeto.map((item) => `${item.status}||${item.etapa}`),
+      variant: "status",
+    },
     {
       eyebrow: result.cta_consultoria.titulo,
       title: "Consultoria personalizada de 30 dias",

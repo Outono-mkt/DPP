@@ -3,30 +3,36 @@
 export type DiscoveryInput = {
   profile: string;
   targetAudienceDescription: string;
+  regeneration?: {
+    stage: "audience" | "pain" | "transformation" | "format";
+    selectedAudience?: string;
+    selectedPain?: string;
+    selectedTransformation?: string;
+    previousSuggestions: string[];
+  };
+};
+
+export type StrategicRecommendation = {
+  titulo: string;
+  descricao: string;
+  porque: string;
+  tradeoff: string;
 };
 
 export type DiscoveryResult = {
-  publicos: Array<{
-    titulo: string;
-    descricao: string;
-    porque_escolher: string;
-  }>;
-  dores: Array<{
-    titulo: string;
-    descricao: string;
-    nivel_consciencia: string;
-    urgencia: string;
+  publicos: StrategicRecommendation[];
+  dores: Array<StrategicRecommendation & {
     frases_reais: [string, string, string];
   }>;
-  transformacoes: Array<{
-    titulo: string;
-    descricao: string;
-    resultado_final: string;
-  }>;
-  formatos: Array<{
+  transformacoes: StrategicRecommendation[];
+  formatos: Array<StrategicRecommendation & {
     nome: string;
-    motivo: string;
-    porque_esse_formato: string;
+    tempo_medio: string;
+    dificuldade: string;
+    ticket_recomendado: string;
+    perfil_ideal: string;
+    potencial_escala: string;
+    avaliacao: number;
   }>;
 };
 
@@ -103,6 +109,14 @@ export type ProductResult = {
   };
   preco: string;
   proximo_passo: string;
+  plano_execucao: Array<{
+    etapa: string;
+    itens: string[];
+  }>;
+  status_projeto: Array<{
+    etapa: string;
+    status: "concluido" | "em_andamento" | "pendente";
+  }>;
   cta_consultoria: {
     titulo: string;
     contexto: string;

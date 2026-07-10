@@ -34,7 +34,28 @@ function isDiscoveryInput(value: unknown): value is DiscoveryInput {
 
   return (
     isFilledString(candidate.profile) &&
-    isFilledString(candidate.targetAudienceDescription)
+    isFilledString(candidate.targetAudienceDescription) &&
+    isValidRegeneration(candidate.regeneration)
+  );
+}
+
+function isValidRegeneration(value: unknown) {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const regeneration = value as NonNullable<DiscoveryInput["regeneration"]>;
+  const validStages = ["audience", "pain", "transformation", "format"];
+
+  return (
+    Boolean(regeneration) &&
+    validStages.includes(regeneration.stage) &&
+    Array.isArray(regeneration.previousSuggestions) &&
+    regeneration.previousSuggestions.every((item) => typeof item === "string")
   );
 }
 

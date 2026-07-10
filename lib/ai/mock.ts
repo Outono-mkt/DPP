@@ -8,22 +8,28 @@ export const mockDiscoveryResult: DiscoveryResult = {
       titulo: "Profissionais autonomos com renda irregular",
       descricao:
         "Pessoas que prestam servicos, vendem por demanda ou recebem em datas diferentes todos os meses.",
-      porque_escolher:
+      porque:
         "Eles sentem a dor da instabilidade todo mes e precisam de um metodo simples, nao de teoria financeira.",
+      tradeoff:
+        "Se escolher um publico amplo demais, a promessa fica fraca e parece mais uma dica financeira generica.",
     },
     {
       titulo: "Prestadores de servico que misturam contas pessoais e profissionais",
       descricao:
         "Profissionais que recebem no CPF ou em uma unica conta e nao sabem separar custo, lucro e retirada.",
-      porque_escolher:
+      porque:
         "Esse publico costuma trabalhar muito, mas perde clareza sobre lucro, custos e retirada.",
+      tradeoff:
+        "Exige exemplos de negocio e caixa, entao pode ser menos direto para quem quer falar de vida pessoal.",
     },
     {
       titulo: "Pessoas endividadas que querem recomecar sem planilhas complexas",
       descricao:
         "Pessoas que ja tentaram se organizar, mas travam quando precisam lidar com numeros e prioridades.",
-      porque_escolher:
+      porque:
         "A urgencia e alta e a promessa pode ser bem concreta: organizar, priorizar e agir.",
+      tradeoff:
+        "Pode atrair pessoas com menor poder de compra e exigir uma promessa mais cuidadosa.",
     },
   ],
   dores: [
@@ -31,8 +37,8 @@ export const mockDiscoveryResult: DiscoveryResult = {
       titulo: "Nao saber quanto pode gastar",
       descricao:
         "A pessoa vive apagando incendio porque nao tem uma regra clara para decidir o que entra, sai e fica guardado.",
-      nivel_consciencia: "Sabe que esta sem controle, mas ainda acha que o problema e ganhar pouco.",
-      urgencia: "Alta, porque afeta decisoes de compra, contas do mes e ansiedade diaria.",
+      porque: "Essa dor vende bem porque aparece toda vez que a pessoa precisa decidir se pode gastar ou guardar.",
+      tradeoff: "Se escolher uma dor mais ampla, a oferta perde urgencia e vira educacao financeira comum.",
       frases_reais: [
         "Eu recebo, pago umas coisas e quando vejo ja acabou.",
         "Tenho medo de gastar e depois faltar para uma conta importante.",
@@ -43,8 +49,8 @@ export const mockDiscoveryResult: DiscoveryResult = {
       titulo: "Medo dos meses fracos",
       descricao:
         "Quando a renda cai, tudo vira ansiedade porque nao existe reserva nem previsao minima.",
-      nivel_consciencia: "Entende que a renda varia, mas nao sabe criar uma regra para se proteger.",
-      urgencia: "Alta, principalmente para quem depende do proprio trabalho para pagar custos fixos.",
+      porque: "A inseguranca dos meses fracos e facil de reconhecer e cria desejo por previsibilidade.",
+      tradeoff: "Pode exigir falar de reserva e planejamento, o que assusta quem quer resultado imediato.",
       frases_reais: [
         "Quando entra menos cliente eu entro em desespero.",
         "Um mes bom nao compensa a inseguranca do mes seguinte.",
@@ -55,24 +61,12 @@ export const mockDiscoveryResult: DiscoveryResult = {
       titulo: "Misturar dinheiro do trabalho com dinheiro pessoal",
       descricao:
         "Sem separar as contas, ela acha que vendeu bem, mas termina o mes sem saber para onde foi o dinheiro.",
-      nivel_consciencia: "Percebe a confusao, mas ainda nao tem um jeito simples de separar as entradas.",
-      urgencia: "Media alta, porque impede crescimento e faz o profissional precificar mal.",
+      porque: "Misturar contas mostra um erro concreto e permite vender uma solucao simples de separacao.",
+      tradeoff: "Funciona melhor para quem ja recebe como autonomo, nao para quem ainda esta comecando.",
       frases_reais: [
         "Eu nao sei se o dinheiro que entrou e meu ou do negocio.",
         "As vezes acho que lucrei, mas depois aparece um custo que esqueci.",
         "Uso a mesma conta para tudo e me perco completamente.",
-      ],
-    },
-    {
-      titulo: "Comecar e abandonar o controle financeiro",
-      descricao:
-        "Metodos complicados geram empolgacao por poucos dias e depois viram mais uma frustracao.",
-      nivel_consciencia: "Ja tentou resolver, mas acredita que organizacao financeira e complicada demais.",
-      urgencia: "Media, mas cresce quando a pessoa se cansa de repetir o mesmo ciclo.",
-      frases_reais: [
-        "Eu baixo planilha, uso dois dias e abandono.",
-        "Nao tenho paciencia para ficar categorizando tudo.",
-        "Queria algo que eu conseguisse manter na vida real.",
       ],
     },
   ],
@@ -80,43 +74,61 @@ export const mockDiscoveryResult: DiscoveryResult = {
     {
       titulo: "Clareza financeira em 7 dias",
       descricao: "Organizar entradas, saidas e prioridades em uma rotina simples.",
-      resultado_final:
-        "A pessoa entende exatamente para onde o dinheiro vai e qual e o primeiro ajuste a fazer.",
+      porque: "Promete um ganho rapido e facil de visualizar: parar de decidir no escuro.",
+      tradeoff: "Se prometer algo maior, como enriquecer, a oferta perde credibilidade.",
     },
     {
       titulo: "Plano simples para renda variavel",
       descricao: "Criar uma regra de distribuicao do dinheiro que funcione mesmo com meses diferentes.",
-      resultado_final:
-        "Ela passa a organizar ganhos irregulares com uma regra facil de repetir todo mes.",
+      porque: "A regra mensal vira um mecanismo claro para vender o produto.",
+      tradeoff: "Pode parecer menos emocional do que falar diretamente da ansiedade com dinheiro.",
     },
     {
       titulo: "Primeira reserva sem sofrimento",
       descricao: "Montar um plano realista para comecar uma reserva sem cortar tudo.",
-      resultado_final:
-        "Ela cria um plano realista para guardar dinheiro mesmo quando a renda oscila.",
+      porque: "Reserva e um desejo concreto para quem vive meses fortes e fracos.",
+      tradeoff: "A promessa pode parecer distante para quem ainda esta apagando incendio.",
     },
   ],
   formatos: [
     {
       nome: "Curso gravado",
-      motivo:
-        "E rapido de produzir, facil de consumir e combina com uma transformacao pratica de poucos dias.",
-      porque_esse_formato:
-        "Permite ensinar o metodo passo a passo e vender de forma escalavel sem depender de agenda individual.",
+      titulo: "Curso gravado",
+      descricao: "Aulas curtas para ensinar a regra financeira em uma ordem simples.",
+      porque: "Combina com passo a passo e pode vender continuamente sem depender da agenda.",
+      tradeoff: "Exige gravar e organizar aulas, entao demora mais do que um checklist ou ebook.",
+      tempo_medio: "6 horas de gravacao e 1 dia de organizacao.",
+      dificuldade: "Media",
+      ticket_recomendado: "R$197 a R$497",
+      perfil_ideal: "Quem quer vender no automatico depois da primeira versao.",
+      potencial_escala: "Alto",
+      avaliacao: 4,
     },
     {
       nome: "Ebook",
-      motivo:
-        "Funciona bem quando o usuario precisa de exemplos prontos e aplicacao imediata.",
-      porque_esse_formato:
-        "Organiza o raciocinio em capitulos simples e pode ser criado rapidamente como primeira oferta.",
+      titulo: "Ebook",
+      descricao: "Um guia pratico com exemplos e checklist para aplicar em poucos dias.",
+      porque: "E rapido de produzir e funciona bem como primeira oferta de baixo risco.",
+      tradeoff: "Tem menos valor percebido que uma experiencia guiada em video.",
+      tempo_medio: "1 a 2 dias de escrita e revisao.",
+      dificuldade: "Baixa",
+      ticket_recomendado: "R$37 a R$97",
+      perfil_ideal: "Quem quer validar rapido antes de gravar aulas.",
+      potencial_escala: "Medio",
+      avaliacao: 3,
     },
     {
       nome: "Desafio",
-      motivo:
-        "Cria senso de progresso e ajuda o aluno a executar uma etapa por dia sem travar.",
-      porque_esse_formato:
-        "Combina com uma promessa de execucao rapida, com pequenas tarefas diarias e resultado visivel.",
+      titulo: "Desafio",
+      descricao: "Uma experiencia de 5 dias com tarefas simples para organizar a renda variavel.",
+      porque: "Cria movimento, urgencia e sensacao de progresso todos os dias.",
+      tradeoff: "Precisa de comunicacao mais ativa para manter o aluno executando.",
+      tempo_medio: "1 dia para roteiro e 5 aulas curtas.",
+      dificuldade: "Media",
+      ticket_recomendado: "R$47 a R$197",
+      perfil_ideal: "Quem quer entregar resultado rapido e vender com prazo.",
+      potencial_escala: "Alto",
+      avaliacao: 5,
     },
   ],
 };
@@ -221,13 +233,48 @@ export const mockProductResult: ProductResult = {
   preco:
     "Entre R$37 e R$67 no lancamento inicial, uma faixa baixa para validar a promessa e gerar as primeiras vendas.",
   proximo_passo:
-    "Escolha o nome mais forte e transforme cada modulo em uma aula curta. Seu produto ja tem uma promessa clara para sair do papel.",
+    "Semana 1: escolha o nome, feche a promessa e escreva o roteiro das 5 aulas. Semana 2: grave as aulas e organize os templates. Semana 3: monte a pagina simples e configure o checkout. Semana 4: publique os primeiros conteudos e convide os primeiros compradores.",
+  plano_execucao: [
+    {
+      etapa: "Preparacao",
+      itens: [
+        "Escolher o nome final do desafio",
+        "Definir a promessa de 5 dias",
+        "Separar exemplos de renda variavel para usar nas aulas",
+      ],
+    },
+    {
+      etapa: "Criacao",
+      itens: [
+        "Criar roteiro das 5 aulas curtas",
+        "Gravar uma aula por dia",
+        "Montar checklist financeiro dos proximos 30 dias",
+      ],
+    },
+    {
+      etapa: "Venda",
+      itens: [
+        "Configurar checkout",
+        "Criar uma pagina simples com promessa, para quem e e conteudo",
+        "Fazer a primeira oferta para contatos e seguidores",
+      ],
+    },
+  ],
+  status_projeto: [
+    { etapa: "Ideia", status: "concluido" },
+    { etapa: "Produto", status: "concluido" },
+    { etapa: "Estrutura", status: "concluido" },
+    { etapa: "Conteudo", status: "em_andamento" },
+    { etapa: "Pagina de vendas", status: "pendente" },
+    { etapa: "Primeiras vendas", status: "pendente" },
+    { etapa: "Escala", status: "pendente" },
+  ],
   cta_consultoria: {
-    titulo: "Vamos transformar essa estrategia em um plano de acao?",
+    titulo: "Seu produto ja esta estruturado.",
     contexto:
-      "Voce ja tem uma boa direcao para um desafio financeiro de 5 dias, pensado para autonomos que vivem a instabilidade da renda variavel.",
+      "Agora começa a etapa mais importante: transformar essa estrategia em vendas reais.",
     descricao:
-      "Na consultoria personalizada, eu te ajudo a transformar essa estrategia em um plano de acao de 30 dias, definindo o que fazer, em que ordem executar e quais decisoes priorizar para tirar o produto do papel.",
-    botao: "Quero montar meu plano de acao",
+      "Na Consultoria Plano de Acao de 30 dias, eu monto com voce um plano personalizado para construir, lancar e vender esse produto da forma mais rapida e organizada possivel.",
+    botao: "Quero montar meu Plano de Acao de 30 dias",
   },
 };

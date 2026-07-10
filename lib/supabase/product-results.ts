@@ -246,15 +246,21 @@ function migrateLegacyProductResult(value: unknown): unknown {
           prova_recomendada: "Use exemplos, bastidores, antes e depois ou uma pequena demonstracao do metodo.",
           cta_recomendado: "Convide a pessoa a dar o primeiro passo com uma decisao simples e direta.",
         },
-    cta_consultoria: isStringObject(result.cta_consultoria, ["titulo", "contexto", "descricao", "botao"])
-      ? result.cta_consultoria
-      : {
-          titulo: "Vamos transformar essa estrategia em um plano de acao?",
-          contexto: `Agora que ${ideia} esta desenhado, o proximo passo e organizar prioridades, oferta e execucao.`,
-          descricao:
-            "Eu posso te ajudar em uma consultoria personalizada para montar um plano de acao de 30 dias e tirar essa estrategia do papel com clareza.",
-          botao: "Quero montar meu plano de acao",
-        },
+    plano_execucao: isExecutionPlanArray(result.plano_execucao)
+      ? result.plano_execucao
+      : buildDefaultExecutionPlan(ideia),
+    status_projeto: isProjectStatusArray(result.status_projeto)
+      ? result.status_projeto
+      : [
+          { etapa: "Ideia", status: "concluido" },
+          { etapa: "Produto", status: "concluido" },
+          { etapa: "Estrutura", status: "concluido" },
+          { etapa: "Conteudo", status: "em_andamento" },
+          { etapa: "Pagina de vendas", status: "pendente" },
+          { etapa: "Primeiras vendas", status: "pendente" },
+          { etapa: "Escala", status: "pendente" },
+        ],
+    cta_consultoria: buildDefaultConsultingCta(),
   };
 }
 
@@ -294,7 +300,81 @@ function isProductResult(value: unknown): value is ProductResult {
     ]) &&
     isFilledString(result.preco) &&
     isFilledString(result.proximo_passo) &&
+    isExecutionPlanArray(result.plano_execucao) &&
+    isProjectStatusArray(result.status_projeto) &&
     isStringObject(result.cta_consultoria, ["titulo", "contexto", "descricao", "botao"])
+  );
+}
+
+function buildDefaultExecutionPlan(idea: string) {
+  return [
+    {
+      etapa: "Preparacao",
+      itens: [
+        "Escolher o nome final",
+        "Fechar a promessa principal",
+        `Organizar a primeira versao de ${idea}`,
+      ],
+    },
+    {
+      etapa: "Criacao",
+      itens: [
+        "Criar a estrutura da entrega",
+        "Produzir o conteudo principal",
+        "Revisar a entrega antes de publicar",
+      ],
+    },
+    {
+      etapa: "Venda",
+      itens: [
+        "Configurar checkout",
+        "Montar uma pagina simples de oferta",
+        "Fazer a primeira oferta para compradores potenciais",
+      ],
+    },
+  ];
+}
+
+function buildDefaultConsultingCta() {
+  return {
+    titulo: "Seu produto ja esta estruturado.",
+    contexto: "Agora começa a etapa mais importante: transformar essa estrategia em vendas reais.",
+    descricao:
+      "Na Consultoria Plano de Acao de 30 dias, eu monto com voce um plano personalizado para construir, lancar e vender esse produto da forma mais rapida e organizada possivel.",
+    botao: "Quero montar meu Plano de Acao de 30 dias",
+  };
+}
+
+function isExecutionPlanArray(value: unknown): value is ProductResult["plano_execucao"] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (item) =>
+        Boolean(item) &&
+        typeof item === "object" &&
+        !Array.isArray(item) &&
+        isFilledString((item as { etapa?: unknown }).etapa) &&
+        isStringArray((item as { itens?: unknown }).itens),
+    )
+  );
+}
+
+function isProjectStatusArray(value: unknown): value is ProductResult["status_projeto"] {
+  const validStatus = ["concluido", "em_andamento", "pendente"];
+
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (item) =>
+        Boolean(item) &&
+        typeof item === "object" &&
+        !Array.isArray(item) &&
+        isFilledString((item as { etapa?: unknown }).etapa) &&
+        isFilledString((item as { status?: unknown }).status) &&
+        validStatus.includes((item as { status: string }).status),
+    )
   );
 }
 
