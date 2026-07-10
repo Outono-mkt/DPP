@@ -780,15 +780,26 @@ function AccessScreen({
       className="relative min-h-screen w-full overflow-hidden bg-[#0D0D0D] bg-cover bg-[25%_center] bg-no-repeat md:bg-[left_center] md:bg-fixed"
       style={{
         backgroundImage:
-          'linear-gradient(90deg, rgba(13,13,13,.12) 0%, rgba(13,13,13,.40) 48%, rgba(13,13,13,.82) 68%, rgba(13,13,13,.96) 100%), url("/brand/login-hero.png")',
+          'linear-gradient(90deg, rgba(13,13,13,.10) 0%, rgba(13,13,13,.30) 45%, rgba(13,13,13,.65) 70%, rgba(13,13,13,.88) 100%), url("/brand/login-hero.png")',
       }}
     >
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#0D0D0D]/35 md:hidden" />
-      <div className="relative z-10 grid min-h-screen w-full grid-cols-1 items-center gap-10 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] md:gap-[6vw] md:px-[7vw] md:py-12">
+      <style>{`
+        @keyframes login-card-in {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+      <div className="relative z-10 grid min-h-screen w-full grid-cols-1 items-center gap-12 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,40fr)_minmax(420px,60fr)] md:gap-[6vw] md:px-[7vw] md:py-12">
         <div className="flex min-w-0 items-center">
-          <div className="max-w-[720px]">
-            <BrandLogo height={78} width={320} variant="horizontal" />
-            <h1 className="mt-10 max-w-[720px] text-[2.55rem] font-bold leading-[1.06] text-white sm:text-[3rem] md:text-[3.5rem] lg:text-[4.25rem]">
+          <div className="max-w-[620px]">
+            <h1 className="max-w-[620px] text-[2.45rem] font-bold leading-[1.05] text-white sm:text-[2.85rem] md:text-[3.75rem] lg:text-[4.5rem]">
               Transforme seu conhecimento
               <br />
               em um
@@ -800,35 +811,28 @@ function AccessScreen({
 
         <div className="flex w-full items-center justify-center md:justify-end">
           <form
-            className="w-full max-w-[520px] space-y-5 rounded-[28px] border border-white/10 bg-[#141414]/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,.42)] backdrop-blur-[14px] sm:p-9 lg:p-[42px]"
+            className="w-full max-w-[520px] space-y-5 rounded-[30px] border border-white/30 p-6 text-[#1A1A1A] shadow-[0_30px_80px_rgba(0,0,0,.24)] backdrop-blur-[24px] sm:p-9 lg:p-[52px_48px]"
             onSubmit={(event) => {
               event.preventDefault();
               void onEnter(email, password);
             }}
+            style={{
+              WebkitBackdropFilter: "blur(24px)",
+              animation: "login-card-in 520ms ease-out both",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), rgba(248,246,242,.76)",
+            }}
           >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/8 bg-[#1B1B1B] text-accent">
-              <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M7.5 10V7.7C7.5 5.2 9.5 3.2 12 3.2s4.5 2 4.5 4.5V10"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeWidth="1.8"
-                />
-                <path
-                  d="M6.8 10h10.4c.9 0 1.6.7 1.6 1.6v6.1c0 .9-.7 1.6-1.6 1.6H6.8c-.9 0-1.6-.7-1.6-1.6v-6.1c0-.9.7-1.6 1.6-1.6Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                />
-                <path d="M12 14v2.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-              </svg>
+            <div className="mb-9 flex justify-center">
+              <BrandLogo height={58} width={240} variant="dark" />
             </div>
-            <h2 className="text-center text-3xl font-bold leading-tight text-white sm:text-4xl">
+            <h2 className="text-center text-3xl font-bold leading-tight text-[#171717] sm:text-4xl">
               Acesse <span className="text-accent">sua conta</span>
             </h2>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-white">E-mail</span>
+              <span className="mb-2 block text-sm font-semibold text-[#1A1A1A]">E-mail</span>
               <input
-                className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15 sm:h-[58px]"
+                className="h-[58px] w-full rounded-2xl border border-white/35 bg-white/40 px-4 text-base text-[#1A1A1A] shadow-inner shadow-white/10 outline-none backdrop-blur-[10px] transition placeholder:text-[#7A746E] focus:border-[#C9A84C] focus:shadow-[0_0_0_3px_rgba(201,168,76,.15)]"
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="seuemail@exemplo.com"
                 type="email"
@@ -837,9 +841,9 @@ function AccessScreen({
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-white">Senha</span>
+              <span className="mb-2 block text-sm font-semibold text-[#1A1A1A]">Senha</span>
               <input
-                className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15 sm:h-[58px]"
+                className="h-[58px] w-full rounded-2xl border border-white/35 bg-white/40 px-4 text-base text-[#1A1A1A] shadow-inner shadow-white/10 outline-none backdrop-blur-[10px] transition placeholder:text-[#7A746E] focus:border-[#C9A84C] focus:shadow-[0_0_0_3px_rgba(201,168,76,.15)]"
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Senha enviada por e-mail"
                 type="password"
@@ -847,16 +851,16 @@ function AccessScreen({
               />
             </label>
 
-            <div className="flex items-center justify-between gap-4 text-sm text-[#A8A8A8]">
+            <div className="flex items-center justify-between gap-4 text-sm text-[#5C5751]">
               <label className="flex min-w-0 items-center gap-2">
                 <input
-                  className="h-4 w-4 rounded border-white/20 bg-[#1B1B1B] accent-[#C9A84C]"
+                  className="h-4 w-4 rounded border-white/40 bg-white/40 accent-[#C9A84C]"
                   type="checkbox"
                 />
                 <span>Lembrar meu acesso</span>
               </label>
               <button
-                className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414]"
+                className="shrink-0 text-[#A67F21] transition hover:text-[#7D5E16] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-white/30"
                 type="button"
               >
                 Esqueci minha senha
@@ -870,13 +874,13 @@ function AccessScreen({
             ) : null}
 
             <button
-              className="h-14 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/10 transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414] disabled:cursor-not-allowed disabled:opacity-55 sm:h-[58px]"
+              className="h-[60px] w-full rounded-2xl bg-[linear-gradient(135deg,#E8CC73_0%,#C99A33_55%,#B57F17_100%)] px-5 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-[#C99A33]/10 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(201,154,51,.30)] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-white/30 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
               disabled={isSubmitting}
               type="submit"
             >
               {isSubmitting ? "Entrando..." : "Entrar"}
             </button>
-            <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm font-medium text-[#A8A8A8]">
+            <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm font-medium text-[#5F5A53]">
               <svg aria-hidden="true" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24">
                 <path
                   d="M12 3.4 18.5 6v5.2c0 4.1-2.6 7.8-6.5 9.1-3.9-1.3-6.5-5-6.5-9.1V6L12 3.4Z"
