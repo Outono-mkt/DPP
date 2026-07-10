@@ -67,7 +67,15 @@ function buildDiscoveryInstruction(input: DiscoveryInput): string {
     return buildRegenerationPrompt(input);
   }
 
-  return `Analise as informacoes abaixo e crie opcoes estrategicas para o primeiro produto digital do usuario.
+  return `Analise as informacoes abaixo como um consultor estrategico.
+
+Nao comece pelo produto.
+
+Pense primeiro na competencia que a pessoa possui.
+
+Depois descubra a transformacao mais valiosa que essa competencia pode gerar.
+
+Somente depois crie opcoes de publico, dor, transformacao e formato.
 
 PERFIL DO USUARIO
 
@@ -89,6 +97,20 @@ OBJETIVO
 
 Encontrar opcoes especificas, simples de entender, comercialmente interessantes e viaveis para um primeiro produto.
 
+A logica deve ser:
+
+Profissao -> competencia -> transformacao -> mecanismo -> produto -> oferta.
+
+Nao transforme profissao em produto.
+
+Descubra o ativo principal da pessoa:
+
+- habilidade que diferencia;
+- experiencia que gera autoridade;
+- resultado que ela ja consegue produzir;
+- problema que resolve naturalmente;
+- situacao concreta em que ela consegue ajudar melhor.
+
 Gere:
 
 - 3 publicos;
@@ -99,6 +121,14 @@ Gere:
 A primeira opcao de cada grupo deve ser a principal recomendacao.
 
 As outras opcoes precisam representar caminhos realmente diferentes.
+
+Cada publico deve parecer uma pessoa ou grupo reconhecivel, com rotina, momento, problema e desejo.
+
+Cada dor deve nascer de uma situacao real, nao de uma categoria ampla.
+
+Cada transformacao deve mostrar um destino concreto, nao um tema.
+
+Cada formato deve nascer da transformacao e da capacidade de execucao do usuario.
 
 Nao repita ideias anteriores.
 
@@ -132,6 +162,12 @@ Publico ja escolhido: ${regeneration.selectedAudience ?? "ainda nao escolhido"}
 Dor ja escolhida: ${regeneration.selectedPain ?? "ainda nao escolhida"}
 Transformacao ja escolhida: ${regeneration.selectedTransformation ?? "ainda nao escolhida"}
 
+Antes de gerar, pense na cadeia:
+
+Profissao -> competencia -> transformacao -> mecanismo -> produto -> oferta.
+
+Nao gere uma variacao cosmetica.
+
 OPCOES ANTERIORES
 
 ${regeneration.previousSuggestions.length > 0 ? regeneration.previousSuggestions.join("\n") : "Nenhuma opcao anterior informada."}
@@ -145,6 +181,8 @@ REGRAS
 - Mantenha coerencia com as respostas originais.
 - A primeira opcao deve ser a melhor recomendacao.
 - Use linguagem simples, especifica e comercial.
+- Busque uma nova transformacao, um novo mecanismo ou um novo recorte real.
+- Evite qualquer opcao que pareca generica ou que poderia servir para varios nichos.
 - Para formatos, use apenas estas opcoes do motor: ${PRODUCT_FORMATS}.
 - Retorne somente o JSON solicitado.`;
 }
