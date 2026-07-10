@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type {
   DiscoveryInput,
@@ -93,6 +94,7 @@ export function ProductProntoFlow() {
   const [generationResult, setGenerationResult] = useState<ProductResult | null>(null);
   const [savedProducts, setSavedProducts] = useState<SavedProductSummary[]>([]);
   const [activeResultId, setActiveResultId] = useState<string | null>(null);
+  const [activeResultFormat, setActiveResultFormat] = useState<string | null>(null);
   const [persistenceMessage, setPersistenceMessage] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -110,6 +112,7 @@ export function ProductProntoFlow() {
     setFlowError(null);
     setGenerationResult(null);
     setActiveResultId(null);
+    setActiveResultFormat(null);
     setPersistenceMessage(null);
   }, []);
 
@@ -267,6 +270,7 @@ export function ProductProntoFlow() {
       const input = buildFinalGenerationInput(answers, customAnswers);
       const result = await requestProductGeneration(input);
       setGenerationResult(result);
+      setActiveResultFormat(input.selectedFormat);
       setStep("result");
       void saveGeneratedProduct(input, result);
     } catch {
@@ -304,6 +308,7 @@ export function ProductProntoFlow() {
   function viewSavedProduct(product: SavedProductSummary) {
     setGenerationResult(product.generated_result);
     setActiveResultId(product.id);
+    setActiveResultFormat(product.selected_format);
     setPersistenceMessage(null);
     setFlowError(null);
     setStep("savedResult");
@@ -347,6 +352,7 @@ export function ProductProntoFlow() {
 
       if (activeResultId === productId) {
         setActiveResultId(null);
+        setActiveResultFormat(null);
         setGenerationResult(null);
         setStep("dashboard");
       }
@@ -399,11 +405,9 @@ export function ProductProntoFlow() {
 
   if (isCheckingSession) {
     return (
-      <main className="min-h-screen bg-background px-5 py-8 text-foreground">
-        <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[600px] items-center justify-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
-            Produto Pronto
-          </p>
+      <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[1180px] items-center justify-center">
+          <BrandLogo size="lg" variant="light" />
         </div>
       </main>
     );
@@ -412,19 +416,18 @@ export function ProductProntoFlow() {
   const isAuthenticated = Boolean(userEmail);
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-[600px] flex-col justify-center">
+    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
+      <div
+        className={`mx-auto flex min-h-[calc(100vh-3rem)] w-full flex-col ${
+          isAuthenticated ? "max-w-[1240px]" : "max-w-[600px] justify-center"
+        }`}
+      >
         {isAuthenticated ? (
-          <div className="mb-6 flex items-center justify-between gap-4 text-xs text-white/50">
-            <span className="truncate">{userEmail}</span>
-            <button
-              className="font-medium text-white/60 underline decoration-white/20 underline-offset-4 transition hover:text-accent"
-              onClick={signOut}
-              type="button"
-            >
-              Sair
-            </button>
-          </div>
+          <AppTopBar
+            createdCount={savedProducts.length}
+            onSignOut={signOut}
+            userEmail={userEmail}
+          />
         ) : null}
 
         {!isAuthenticated && (
@@ -472,10 +475,49 @@ export function ProductProntoFlow() {
             onRestart={restart}
             persistenceMessage={persistenceMessage}
             result={generationResult}
+            selectedFormat={activeResultFormat}
           />
         )}
       </div>
     </main>
+  );
+}
+
+function AppTopBar({
+  createdCount,
+  onSignOut,
+  userEmail,
+}: {
+  createdCount: number;
+  onSignOut: () => void;
+  userEmail: string | null;
+}) {
+  return (
+    <header className="mb-7 flex flex-col gap-4 rounded-[28px] border border-white/8 bg-surface/92 px-4 py-4 shadow-2xl shadow-black/25 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="sm:hidden">
+          <BrandLogo size="md" variant="icon" />
+        </div>
+        <div className="hidden sm:block">
+          <BrandLogo size="md" variant="light" />
+        </div>
+        <span className="hidden truncate border-l border-white/10 pl-4 text-sm text-muted md:block">
+          {userEmail}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3 sm:justify-end">
+        <span className="rounded-full border border-white/10 bg-surface-2 px-4 py-2 text-xs font-semibold text-[#F7F5EF]">
+          {createdCount} de 2 produtos
+        </span>
+        <button
+          className="h-10 rounded-full border border-white/10 px-5 text-sm font-semibold text-[#F7F5EF] transition hover:border-accent hover:text-accent"
+          onClick={onSignOut}
+          type="button"
+        >
+          Sair
+        </button>
+      </div>
+    </header>
   );
 }
 
@@ -626,29 +668,29 @@ function AccessScreen({
 
   return (
     <section className="w-full">
-      <div className="mb-10 text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
-          Produto Pronto
-        </p>
-        <h1 className="mt-5 text-4xl font-semibold leading-tight text-foreground">
+      <div className="mb-8 text-center">
+        <div className="flex justify-center">
+          <BrandLogo size="lg" variant="light" />
+        </div>
+        <h1 className="mt-8 text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
           Entre para desenhar seu primeiro produto digital.
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/66">
+        <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-muted">
           Use o e-mail da compra e a senha enviada apos a confirmacao do pagamento.
         </p>
       </div>
 
       <form
-        className="space-y-4 rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/30"
+        className="space-y-5 rounded-[32px] border border-white/8 bg-surface p-5 shadow-2xl shadow-black/30 sm:p-7"
         onSubmit={(event) => {
           event.preventDefault();
           void onEnter(email, password);
         }}
       >
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-white/78">E-mail</span>
+          <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">E-mail</span>
           <input
-            className="h-12 w-full rounded-md border border-white/10 bg-black/30 px-4 text-base text-white outline-none transition focus:border-accent"
+            className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent"
             onChange={(event) => setEmail(event.target.value)}
             placeholder="seuemail@exemplo.com"
             type="email"
@@ -657,9 +699,9 @@ function AccessScreen({
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-white/78">Senha</span>
+          <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">Senha</span>
           <input
-            className="h-12 w-full rounded-md border border-white/10 bg-black/30 px-4 text-base text-white outline-none transition focus:border-accent"
+            className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent"
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Senha enviada por e-mail"
             type="password"
@@ -668,13 +710,13 @@ function AccessScreen({
         </label>
 
         {error ? (
-          <p className="rounded-md border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm leading-5 text-red-100">
+          <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
             {error}
           </p>
         ) : null}
 
         <button
-          className="h-12 w-full rounded-md bg-accent px-5 text-sm font-bold uppercase tracking-[0.16em] text-[#0d0d0d] transition hover:bg-[#d8b95d] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-55"
+          className="h-[52px] w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-55"
           disabled={isSubmitting}
           type="submit"
         >
@@ -711,18 +753,33 @@ function OnboardingScreen({
   const canContinue = canContinueFromStep(currentQuestion, answers, customAnswers);
 
   return (
-    <section className="w-full">
-      <div className="mb-8">
-        <div className="mb-3 flex items-center justify-between text-xs font-medium uppercase tracking-[0.18em] text-white/54">
-          <span>Etapa {currentQuestion + 1} de {totalOnboardingSteps}</span>
-          <span>{progress}%</span>
+    <section className="w-full pb-10">
+      <div className="mb-6 rounded-[32px] border border-white/8 bg-surface p-5 shadow-2xl shadow-black/25 sm:p-7">
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
+              Consultoria guiada
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold text-[#F7F5EF]">
+              Produto Pronto
+            </h1>
+          </div>
+          <div className="rounded-full border border-white/10 bg-surface-2 px-4 py-2 text-sm font-semibold text-[#F7F5EF]">
+            Etapa {currentQuestion + 1} de {totalOnboardingSteps}
+          </div>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
+        <div className="flex items-center gap-4">
+          <div className="h-3 flex-1 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="text-sm font-semibold text-accent-light">{progress}%</span>
         </div>
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/30">
+      <div className="rounded-[34px] bg-paper p-5 text-ink shadow-2xl shadow-black/25 sm:p-8 lg:p-10">
         {renderOnboardingStep({
           answers,
           currentQuestion,
@@ -733,14 +790,14 @@ function OnboardingScreen({
         })}
 
         {error ? (
-          <p className="mt-5 rounded-md border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm leading-5 text-red-100">
+          <p className="mt-6 rounded-2xl border border-red-500/20 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700">
             {error}
           </p>
         ) : null}
 
-        <div className="mt-8 flex gap-3">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <button
-            className="h-11 flex-1 rounded-md border border-white/12 px-4 text-sm font-semibold text-white/78 transition hover:border-white/26 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+            className="h-12 flex-1 rounded-2xl border border-black/12 px-4 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] disabled:cursor-not-allowed disabled:opacity-35"
             disabled={currentQuestion === 0}
             onClick={onBack}
             type="button"
@@ -748,7 +805,7 @@ function OnboardingScreen({
             Voltar
           </button>
           <button
-            className="h-11 flex-1 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.14em] text-[#0d0d0d] transition hover:bg-[#d8b95d] disabled:cursor-not-allowed disabled:opacity-45"
+            className="h-12 flex-1 rounded-2xl bg-accent px-4 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!canContinue}
             onClick={() => void onForward()}
             type="button"
@@ -923,10 +980,10 @@ function TextStep({
 }) {
   return (
     <div>
-      <h2 className="text-2xl font-semibold leading-tight text-white">{title}</h2>
-      <p className="mt-3 text-sm leading-6 text-white/64">{helper}</p>
+      <h2 className="max-w-3xl text-3xl font-semibold leading-tight text-ink">{title}</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#66635B]">{helper}</p>
       <textarea
-        className="mt-6 min-h-40 w-full resize-none rounded-md border border-white/10 bg-black/30 px-4 py-3 text-base leading-6 text-white outline-none transition focus:border-accent"
+        className="mt-7 min-h-44 w-full resize-none rounded-[24px] border border-black/10 bg-white px-5 py-4 text-base leading-7 text-ink outline-none transition placeholder:text-[#8B877C] focus:border-[#8B7334] focus:ring-4 focus:ring-accent/15"
         onChange={(event) => onChange(event.target.value)}
         placeholder="Escreva sua resposta aqui"
         value={value}
@@ -950,8 +1007,8 @@ function OptionsStep({
 }) {
   return (
     <div>
-      <h2 className="text-2xl font-semibold leading-tight text-white">{title}</h2>
-      <p className="mt-3 text-sm leading-6 text-white/64">{helper}</p>
+      <h2 className="max-w-3xl text-3xl font-semibold leading-tight text-ink">{title}</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#66635B]">{helper}</p>
       <OptionQuestion onChange={onChange} options={options} value={value} />
     </div>
   );
@@ -982,9 +1039,9 @@ function CardStep({
 }) {
   return (
     <div>
-      <h2 className="text-2xl font-semibold leading-tight text-white">{title}</h2>
-      <p className="mt-3 text-sm leading-6 text-white/64">{helper}</p>
-      <div className="mt-6 grid gap-3">
+      <h2 className="max-w-3xl text-3xl font-semibold leading-tight text-ink">{title}</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#66635B]">{helper}</p>
+      <div className="mt-7 grid gap-4 lg:grid-cols-2">
         {items.map((item) => (
           <ChoiceCard
             description={item.description}
@@ -1005,7 +1062,7 @@ function CardStep({
             />
             {selectedValue === marker ? (
               <textarea
-                className="min-h-28 w-full resize-none rounded-md border border-white/10 bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none transition focus:border-accent"
+                className="min-h-32 w-full resize-none rounded-[22px] border border-black/10 bg-white px-5 py-4 text-sm leading-6 text-ink outline-none transition placeholder:text-[#8B877C] focus:border-[#8B7334] focus:ring-4 focus:ring-accent/15"
                 onChange={(event) => onCustomChange?.(event.target.value)}
                 placeholder={customPlaceholder}
                 value={customValue ?? ""}
@@ -1031,16 +1088,16 @@ function ChoiceCard({
 }) {
   return (
     <button
-      className={`rounded-md border px-4 py-3 text-left transition ${
+      className={`rounded-[24px] border p-5 text-left transition ${
         selected
-          ? "border-accent bg-accent/12 text-white"
-          : "border-white/10 bg-black/20 text-white/72 hover:border-accent/70 hover:text-white"
+          ? "border-accent bg-[#FBF5DE] text-ink shadow-md shadow-accent/10"
+          : "border-black/10 bg-white text-[#56534D] hover:border-[#8B7334] hover:text-ink"
       }`}
       onClick={onClick}
       type="button"
     >
-      <span className="block text-sm font-semibold text-white">{title}</span>
-      <span className="mt-2 block text-sm leading-6 text-white/62">{description}</span>
+      <span className="block text-base font-semibold text-ink">{title}</span>
+      <span className="mt-2 block text-sm leading-6 text-[#66635B]">{description}</span>
     </button>
   );
 }
@@ -1055,16 +1112,16 @@ function OptionQuestion({
   value: string;
 }) {
   return (
-    <div className="mt-6 grid gap-3">
+    <div className="mt-7 grid gap-4 sm:grid-cols-3">
       {options.map((option) => {
         const selected = option.value === value;
 
         return (
           <button
-            className={`rounded-md border px-4 py-3 text-left text-sm font-medium transition ${
+            className={`rounded-[22px] border px-5 py-4 text-left text-sm font-semibold transition ${
               selected
-                ? "border-accent bg-accent/12 text-white"
-                : "border-white/10 bg-black/20 text-white/72 hover:border-accent/70 hover:text-white"
+                ? "border-accent bg-[#FBF5DE] text-ink shadow-md shadow-accent/10"
+                : "border-black/10 bg-white text-[#56534D] hover:border-[#8B7334] hover:text-ink"
             }`}
             key={option.value}
             onClick={() => onChange(option.value)}
@@ -1080,15 +1137,17 @@ function OptionQuestion({
 
 function LoadingScreen({ mode, phrase }: { mode: LoadingMode; phrase: string }) {
   return (
-    <section className="w-full text-center">
-      <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
-        Produto Pronto
-      </p>
-      <div className="mx-auto mt-10 h-16 w-16 animate-spin rounded-full border border-accent/20 border-t-accent" />
-      <h2 className="mt-8 text-2xl font-semibold text-white">
-        {mode === "discovery" ? "Encontrando seus melhores caminhos" : "Criando seu produto"}
-      </h2>
-      <p className="mt-3 min-h-6 text-sm text-white/64">{phrase}</p>
+    <section className="flex min-h-[64vh] w-full items-center justify-center pb-10 text-center">
+      <div className="w-full max-w-2xl rounded-[36px] border border-white/8 bg-surface p-8 shadow-2xl shadow-black/30 sm:p-12">
+        <div className="flex justify-center">
+          <BrandLogo size="lg" variant="light" />
+        </div>
+        <div className="mx-auto mt-10 h-20 w-20 animate-spin rounded-full border border-accent/20 border-t-accent" />
+        <h2 className="mt-8 text-3xl font-semibold text-[#F7F5EF]">
+          {mode === "discovery" ? "Encontrando seus melhores caminhos" : "Criando seu produto"}
+        </h2>
+        <p className="mt-4 min-h-6 text-sm text-muted">{phrase}</p>
+      </div>
     </section>
   );
 }
@@ -1113,101 +1172,173 @@ function ProductsDashboard({
   products: SavedProductSummary[];
 }) {
   const reachedLimit = products.length >= 2;
+  const availableSlots = Math.max(2 - products.length, 0);
+  const lastFormat = products[0]?.selected_format ?? "Nenhum ainda";
 
   return (
-    <section className="w-full py-6">
-      <div className="mb-7">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
-          Produto Pronto
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold leading-tight text-white">
-          Meus Produtos
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-white/64">
-          Você pode criar até 2 produtos neste acesso.
-        </p>
+    <section className="w-full pb-10">
+      <div className="mb-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="rounded-[34px] border border-white/8 bg-surface p-6 shadow-2xl shadow-black/25 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
+                Dashboard
+              </p>
+              <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.05] text-[#F7F5EF] sm:text-5xl">
+                Seus produtos digitais em construção.
+              </h1>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-muted">
+                Acompanhe suas estratégias salvas, baixe o PDF e crie uma nova direção quando houver espaço disponível.
+              </p>
+            </div>
+            <button
+              className="h-12 rounded-full bg-accent px-6 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/15 transition hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={reachedLimit}
+              onClick={onCreateNew}
+              type="button"
+            >
+              Criar novo produto
+            </button>
+          </div>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <MetricCard label="Criados" value={String(products.length)} />
+            <MetricCard label="Disponíveis" value={String(availableSlots)} />
+            <MetricCard label="Último formato" value={lastFormat} />
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between rounded-[34px] border border-white/8 bg-surface-2 p-6 shadow-2xl shadow-black/20 sm:p-8">
+          <BrandLogo size="md" variant="light" />
+          <div className="mt-8">
+            <p className="text-sm leading-6 text-muted">
+              Limite atual do acesso
+            </p>
+            <p className="mt-2 text-3xl font-semibold text-[#F7F5EF]">
+              {products.length}/2
+            </p>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-accent transition-all duration-300"
+                style={{ width: `${Math.min((products.length / 2) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {error ? (
-        <p className="mb-4 rounded-md border border-red-400/20 bg-red-500/10 px-3 py-2 text-sm leading-5 text-red-100">
+        <p className="mb-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
           {error}
         </p>
       ) : null}
 
       {message ? (
-        <p className="mb-4 rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 text-sm leading-5 text-white/68">
+        <p className="mb-4 rounded-2xl border border-white/10 bg-surface px-4 py-3 text-sm leading-5 text-muted">
           {message}
         </p>
       ) : null}
 
       {reachedLimit ? (
-        <p className="mb-4 rounded-md border border-accent/20 bg-accent/10 px-3 py-2 text-sm leading-5 text-white/72">
+        <p className="mb-4 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-5 text-[#F7F5EF]">
           Você já criou seus 2 produtos disponíveis neste acesso. Para criar outro, exclua um produto antigo ou fale comigo.
         </p>
       ) : null}
 
-      <div className="space-y-4">
-        {products.map((product) => (
-          <article
-            className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20"
-            key={product.id}
-          >
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
-              {product.selected_format}
+      <div className="rounded-[34px] bg-paper p-4 text-ink shadow-2xl shadow-black/20 sm:p-6 lg:p-8">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8B7334]">
+              Biblioteca
             </p>
-            <h2 className="mt-2 text-xl font-semibold leading-snug text-white">
-              {product.generated_result.ideia}
+            <h2 className="mt-2 text-3xl font-semibold leading-tight">
+              Meus Produtos
             </h2>
-            <p className="mt-2 text-xs text-white/48">
-              Criado em {formatDisplayDate(product.created_at)}
-            </p>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <button
-                className="h-10 rounded-md bg-accent px-3 text-xs font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
-                onClick={() => onViewProduct(product)}
-                type="button"
-              >
-                Visualizar
-              </button>
-              <button
-                className="h-10 rounded-md border border-white/12 px-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 transition hover:border-accent hover:text-accent disabled:opacity-45"
-                disabled={isDownloadingPdf}
-                onClick={() => onDownloadPdf(product.id)}
-                type="button"
-              >
-                Baixar PDF
-              </button>
-              <button
-                className="h-10 rounded-md border border-red-300/20 px-3 text-xs font-semibold uppercase tracking-[0.12em] text-red-100/80 transition hover:border-red-200 hover:text-red-50"
-                onClick={() => onDeleteProduct(product.id)}
-                type="button"
-              >
-                Excluir
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      {products.length === 0 ? (
-        <div className="rounded-lg border border-white/10 bg-white/[0.045] p-5">
-          <p className="text-sm leading-6 text-white/64">
-            Você ainda não criou nenhum produto. Comece pelo primeiro e salve sua estratégia aqui.
+          </div>
+          <p className="max-w-sm text-sm leading-6 text-[#66635B]">
+            Visualize, baixe ou exclua uma estratégia salva.
           </p>
         </div>
-      ) : null}
 
-      {!reachedLimit ? (
-        <button
-          className="mt-6 h-12 w-full rounded-md bg-accent px-5 text-sm font-bold uppercase tracking-[0.16em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
-          onClick={onCreateNew}
-          type="button"
-        >
-          Criar novo produto
-        </button>
-      ) : null}
+        {products.length > 0 ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {products.map((product) => (
+              <article
+                className="rounded-[26px] border border-black/8 bg-white p-5 shadow-sm shadow-black/5"
+                key={product.id}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8B7334]">
+                      {product.selected_format}
+                    </p>
+                    <h3 className="mt-3 text-xl font-semibold leading-snug text-ink">
+                      {product.generated_result.nomes[0] ?? product.generated_result.ideia}
+                    </h3>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[#EFE7D2] px-3 py-1 text-xs font-semibold text-[#5F4B19]">
+                    {formatDisplayDate(product.created_at)}
+                  </span>
+                </div>
+                <p className="mt-4 line-clamp-3 text-sm leading-6 text-[#56534D]">
+                  {product.generated_result.promessa}
+                </p>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <button
+                    className="h-11 rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C]"
+                    onClick={() => onViewProduct(product)}
+                    type="button"
+                  >
+                    Visualizar
+                  </button>
+                  <button
+                    className="h-11 rounded-full border border-black/12 px-4 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] disabled:opacity-45"
+                    disabled={isDownloadingPdf}
+                    onClick={() => onDownloadPdf(product.id)}
+                    type="button"
+                  >
+                    Baixar PDF
+                  </button>
+                  <button
+                    className="h-11 rounded-full border border-red-300/50 px-4 text-sm font-semibold text-red-700 transition hover:border-red-500 hover:text-red-800"
+                    onClick={() => onDeleteProduct(product.id)}
+                    type="button"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[28px] border border-dashed border-black/15 bg-white/70 p-8 text-center">
+            <h3 className="text-2xl font-semibold text-ink">
+              Nenhum produto criado ainda.
+            </h3>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#66635B]">
+              Comece pelo primeiro diagnóstico e salve sua estratégia para consultar ou baixar depois.
+            </p>
+            <button
+              className="mt-6 h-12 rounded-full bg-accent px-6 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
+              onClick={onCreateNew}
+              type="button"
+            >
+              Criar meu primeiro produto
+            </button>
+          </div>
+        )}
+      </div>
     </section>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border border-white/8 bg-surface-2 p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{label}</p>
+      <p className="mt-3 truncate text-2xl font-semibold text-[#F7F5EF]">{value}</p>
+    </div>
   );
 }
 
@@ -1223,6 +1354,7 @@ function ResultScreen({
   onRestart,
   persistenceMessage,
   result,
+  selectedFormat,
 }: {
   activeResultId: string | null;
   copiedBlock: string | null;
@@ -1235,51 +1367,68 @@ function ResultScreen({
   onRestart: () => void;
   persistenceMessage: string | null;
   result: ProductResult | null;
+  selectedFormat: string | null;
 }) {
   const resultBlocks = result ? productResultToBlocks(result) : [];
 
   return (
-    <section className="w-full py-6">
-      <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-accent">
-            {isSavedResult ? "Produto salvo" : "Resultado"}
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold leading-tight text-white">
-            Seu produto esta desenhado.
-          </h1>
-        </div>
-        <div className="flex flex-col gap-2 text-left sm:text-right">
-          <button
-            className="text-sm font-medium text-white/58 underline decoration-white/20 underline-offset-4 transition hover:text-accent"
-            onClick={onBackToDashboard}
-            type="button"
-          >
-            Voltar para Meus Produtos
-          </button>
-          {!isSavedResult ? (
+    <section className="w-full pb-10">
+      <div className="mb-7 rounded-[36px] border border-white/8 bg-surface p-6 shadow-2xl shadow-black/25 sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="mb-5">
+              <BrandLogo size="md" variant="light" />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
+              {isSavedResult ? "Produto salvo" : "Resultado"}
+            </p>
+            <h1 className="mt-4 text-4xl font-semibold leading-[1.06] text-[#F7F5EF] sm:text-5xl">
+              {result?.nomes[0] ?? "Seu produto está desenhado."}
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
+              A estratégia abaixo organiza produto, promessa, mercado e venda em blocos prontos para execução.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 lg:min-w-64">
             <button
-              className="text-sm font-medium text-white/58 underline decoration-white/20 underline-offset-4 transition hover:text-accent"
-              onClick={onRestart}
+              className="h-11 rounded-full border border-white/10 px-5 text-sm font-semibold text-[#F7F5EF] transition hover:border-accent hover:text-accent"
+              onClick={onBackToDashboard}
               type="button"
             >
-              Quero recomecar com um produto diferente
+              Voltar para Meus Produtos
             </button>
-          ) : null}
+            {!isSavedResult ? (
+              <button
+                className="h-11 rounded-full border border-white/10 px-5 text-sm font-semibold text-muted transition hover:border-accent hover:text-accent"
+                onClick={onRestart}
+                type="button"
+              >
+                Recomeçar com outro produto
+              </button>
+            ) : null}
+          </div>
         </div>
+
+        {result ? (
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <ResultSummaryCard label="Formato" value={selectedFormat ?? "Produto digital"} />
+            <ResultSummaryCard label="Promessa" value={result.promessa} featured />
+            <ResultSummaryCard label="Preço" value={result.preco} />
+          </div>
+        ) : null}
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-red-400/20 bg-red-500/10 p-5">
+        <div className="rounded-[28px] border border-red-400/20 bg-red-500/10 p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-red-200">
             Geracao interrompida
           </p>
-          <h2 className="mt-3 text-2xl font-semibold text-white">
+          <h2 className="mt-3 text-2xl font-semibold text-[#F7F5EF]">
             Nao conseguimos gerar seu produto agora.
           </h2>
-          <p className="mt-3 text-sm leading-6 text-white/68">{error}</p>
+          <p className="mt-3 text-sm leading-6 text-muted">{error}</p>
           <button
-            className="mt-5 h-11 rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+            className="mt-5 h-11 rounded-full bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
             onClick={onRestart}
             type="button"
           >
@@ -1289,69 +1438,93 @@ function ResultScreen({
       ) : null}
 
       {!error && result ? (
-        <div className="space-y-4">
-          {resultBlocks.map((block) => (
-            <article
-              className="rounded-lg border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/20"
-              key={block.eyebrow}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
-                    {block.eyebrow}
-                  </p>
-                  <h2 className="mt-2 text-xl font-semibold leading-snug text-white">
-                    {block.title}
-                  </h2>
-                </div>
-                <button
-                  className="rounded-md border border-white/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/70 transition hover:border-accent hover:text-accent"
-                  onClick={() => onCopyBlock(block)}
-                  type="button"
-                >
-                  {copiedBlock === block.eyebrow ? "Copiado" : "Copiar"}
-                </button>
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          <aside className="hidden lg:block">
+            <nav className="sticky top-6 rounded-[28px] border border-white/8 bg-surface p-4">
+              <p className="px-3 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-accent-light">
+                Estratégia
+              </p>
+              <div className="space-y-1">
+                {resultBlocks.map((block, index) => (
+                  <a
+                    className="block rounded-2xl px-3 py-2 text-sm leading-5 text-muted transition hover:bg-white/5 hover:text-[#F7F5EF]"
+                    href={`#result-block-${index + 1}`}
+                    key={block.eyebrow}
+                  >
+                    {String(index + 1).padStart(2, "0")} {block.eyebrow}
+                  </a>
+                ))}
               </div>
+            </nav>
+          </aside>
 
-              {Array.isArray(block.content) ? (
-                <ul className="mt-4 space-y-2 text-sm leading-6 text-white/68">
-                  {block.content.map((item) => (
-                    <li className="rounded-md bg-black/20 px-3 py-2" key={item}>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-4 text-sm leading-6 text-white/68">{block.content}</p>
-              )}
-
-              {block.action ? (
-                <button
-                  className="mt-5 h-11 w-full rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
-                  onClick={() => {
-                    const whatsappUrl = process.env.NEXT_PUBLIC_WHATSAPP_URL;
-
-                    if (whatsappUrl) {
-                      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-                      return;
-                    }
-
-                    window.alert(block.action?.fallbackMessage);
-                  }}
-                  type="button"
+          <div className="rounded-[34px] bg-paper p-4 text-ink shadow-2xl shadow-black/20 sm:p-6 lg:p-8">
+            <div className="space-y-5">
+              {resultBlocks.map((block, index) => (
+                <article
+                  className="rounded-[26px] border border-black/8 bg-white p-5 shadow-sm shadow-black/5 sm:p-6"
+                  id={`result-block-${index + 1}`}
+                  key={block.eyebrow}
                 >
-                  {block.action.label}
-                </button>
-              ) : null}
-            </article>
-          ))}
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#8B7334]">
+                        {String(index + 1).padStart(2, "0")} {block.eyebrow}
+                      </p>
+                      <h2 className="mt-2 text-2xl font-semibold leading-snug text-ink">
+                        {block.title}
+                      </h2>
+                    </div>
+                    <button
+                      className="h-10 rounded-full border border-black/12 px-4 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] sm:shrink-0"
+                      onClick={() => onCopyBlock(block)}
+                      type="button"
+                    >
+                      {copiedBlock === block.eyebrow ? "Copiado" : "Copiar"}
+                    </button>
+                  </div>
+
+                  {Array.isArray(block.content) ? (
+                    <ul className="mt-5 grid gap-3 text-sm leading-6 text-[#56534D] md:grid-cols-2">
+                      {block.content.map((item) => (
+                        <li className="rounded-[18px] bg-[#F3F1EB] px-4 py-3" key={item}>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-5 text-sm leading-7 text-[#56534D]">{block.content}</p>
+                  )}
+
+                  {block.action ? (
+                    <button
+                      className="mt-6 h-12 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
+                      onClick={() => {
+                        const whatsappUrl = process.env.NEXT_PUBLIC_WHATSAPP_URL;
+
+                        if (whatsappUrl) {
+                          window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+                          return;
+                        }
+
+                        window.alert(block.action?.fallbackMessage);
+                      }}
+                      type="button"
+                    >
+                      {block.action.label}
+                    </button>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
 
       {!error && result ? (
-        <div className="sticky bottom-4 mt-6 rounded-lg border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur">
+        <div className="sticky bottom-4 mt-6 rounded-[24px] border border-white/10 bg-[#111]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur">
           <button
-            className="h-11 w-full rounded-md bg-accent px-4 text-sm font-bold uppercase tracking-[0.12em] text-[#0d0d0d] transition hover:bg-[#d8b95d]"
+            className="h-12 w-full rounded-2xl bg-accent px-4 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
             disabled={!activeResultId || isDownloadingPdf}
             onClick={onDownloadPdf}
             type="button"
@@ -1362,12 +1535,29 @@ function ResultScreen({
       ) : null}
 
       {persistenceMessage ? (
-        <p className="mt-4 rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 text-sm leading-5 text-white/68">
+        <p className="mt-4 rounded-2xl border border-white/10 bg-surface px-4 py-3 text-sm leading-5 text-muted">
           {persistenceMessage}
         </p>
       ) : null}
 
     </section>
+  );
+}
+
+function ResultSummaryCard({
+  featured = false,
+  label,
+  value,
+}: {
+  featured?: boolean;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className={`rounded-[24px] border p-5 ${featured ? "border-accent/30 bg-accent/10" : "border-white/8 bg-surface-2"}`}>
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-light">{label}</p>
+      <p className="mt-3 line-clamp-4 text-sm font-semibold leading-6 text-[#F7F5EF]">{value}</p>
+    </div>
   );
 }
 

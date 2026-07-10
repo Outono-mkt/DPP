@@ -2,14 +2,26 @@
 
 :root {
   --background: #0d0d0d;
-  --foreground: #ffffff;
+  --foreground: #f7f5ef;
   --accent: #c9a84c;
+  --surface: #171717;
+  --surface-2: #222222;
+  --accent-light: #e5cb78;
+  --muted: #a7a7a7;
+  --paper: #f3f1eb;
+  --ink: #171717;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-accent-light: var(--accent-light);
+  --color-muted: var(--muted);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
   --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
 }
@@ -26,7 +38,9 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(201, 168, 76, 0.12), transparent 34rem),
+    linear-gradient(135deg, #0d0d0d 0%, #141414 48%, #0d0d0d 100%);
   color: var(--foreground);
   font-family: var(--font-sans);
 }
