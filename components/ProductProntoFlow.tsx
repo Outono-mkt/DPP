@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -83,11 +84,10 @@ const experienceOptions: QuestionOption[] = [
 ];
 
 const loadingPhrases = [
-  "Analisando seu conhecimento...",
-  "Identificando oportunidades de mercado...",
-  "Desenhando a estrutura do seu produto...",
-  "Criando sugestoes de nome...",
-  "Quase pronto...",
+  "Analisando seu conhecimento",
+  "Encontrando o publico mais promissor",
+  "Organizando a estrategia",
+  "Montando seu produto",
 ];
 
 export function ProductProntoFlow() {
@@ -109,6 +109,7 @@ export function ProductProntoFlow() {
   const [persistenceMessage, setPersistenceMessage] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -396,6 +397,7 @@ export function ProductProntoFlow() {
 
   async function deleteSavedProduct(productId: string) {
     try {
+      setDeletingProductId(productId);
       setPersistenceMessage(null);
       await requestDeleteProduct(productId);
       setSavedProducts((current) => current.filter((product) => product.id !== productId));
@@ -408,6 +410,8 @@ export function ProductProntoFlow() {
       }
     } catch {
       setPersistenceMessage("Nao foi possivel excluir este produto agora.");
+    } finally {
+      setDeletingProductId(null);
     }
   }
 
@@ -469,7 +473,7 @@ export function ProductProntoFlow() {
     <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
       <div
         className={`mx-auto flex min-h-[calc(100vh-3rem)] w-full flex-col ${
-          isAuthenticated ? "max-w-[1240px]" : "max-w-[600px] justify-center"
+          isAuthenticated ? "max-w-[1240px]" : "max-w-[1120px] justify-center"
         }`}
       >
         {isAuthenticated ? (
@@ -486,6 +490,7 @@ export function ProductProntoFlow() {
         {isAuthenticated && step === "dashboard" && (
           <ProductsDashboard
             error={historyError}
+            deletingProductId={deletingProductId}
             isDownloadingPdf={isDownloadingPdf}
             message={persistenceMessage}
             onCreateNew={startNewProduct}
@@ -767,62 +772,73 @@ function AccessScreen({
   const [password, setPassword] = useState("");
 
   return (
-    <section className="w-full">
-      <div className="mb-8 text-center">
-        <div className="flex justify-center">
-          <BrandLogo size="lg" variant="light" />
-        </div>
-        <h1 className="mt-8 text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-          Entre para desenhar seu primeiro produto digital.
-        </h1>
-        <p className="mx-auto mt-5 max-w-md text-sm leading-6 text-muted">
-          Use o e-mail da compra e a senha enviada apos a confirmacao do pagamento.
-        </p>
+    <section className="grid w-full items-center gap-7 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="order-2 overflow-hidden rounded-[36px] border border-white/8 bg-surface shadow-2xl shadow-black/30 lg:order-1">
+        <Image
+          alt="Composição visual Produto Pronto"
+          className="h-full min-h-[260px] w-full object-cover"
+          height={1024}
+          priority
+          src="/brand/login-hero.png"
+          width={1536}
+        />
       </div>
 
-      <form
-        className="space-y-5 rounded-[32px] border border-white/8 bg-surface p-5 shadow-2xl shadow-black/30 sm:p-7"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void onEnter(email, password);
-        }}
-      >
-        <label className="block">
-          <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">E-mail</span>
-          <input
-            className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent"
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="seuemail@exemplo.com"
-            type="email"
-            value={email}
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">Senha</span>
-          <input
-            className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent"
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Senha enviada por e-mail"
-            type="password"
-            value={password}
-          />
-        </label>
-
-        {error ? (
-          <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
-            {error}
+      <div className="order-1 lg:order-2">
+        <div className="mb-8">
+          <BrandLogo size="lg" variant="light" />
+          <h1 className="mt-8 text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
+            Entre para desenhar seu primeiro produto digital.
+          </h1>
+          <p className="mt-5 max-w-md text-sm leading-6 text-muted">
+            Use o e-mail da compra e a senha enviada apos a confirmacao do pagamento.
           </p>
-        ) : null}
+        </div>
 
-        <button
-          className="h-[52px] w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-55"
-          disabled={isSubmitting}
-          type="submit"
+        <form
+          className="space-y-5 rounded-[32px] border border-white/8 bg-surface p-5 shadow-2xl shadow-black/30 sm:p-7"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onEnter(email, password);
+          }}
         >
-          {isSubmitting ? "Entrando..." : "Entrar"}
-        </button>
-      </form>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">E-mail</span>
+            <input
+              className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/15"
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="seuemail@exemplo.com"
+              type="email"
+              value={email}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">Senha</span>
+            <input
+              className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/15"
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Senha enviada por e-mail"
+              type="password"
+              value={password}
+            />
+          </label>
+
+          {error ? (
+            <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            className="h-[52px] w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-55"
+            disabled={isSubmitting}
+            type="submit"
+          >
+            {isSubmitting ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+      </div>
     </section>
   );
 }
@@ -1379,7 +1395,15 @@ function LoadingScreen({ mode, phrase }: { mode: LoadingMode; phrase: string }) 
         <div className="flex justify-center">
           <BrandLogo size="lg" variant="light" />
         </div>
-        <div className="mx-auto mt-10 h-20 w-20 animate-spin rounded-full border border-accent/20 border-t-accent" />
+        <div className="mx-auto mt-10 flex h-24 w-24 items-center justify-center rounded-[28px] border border-accent/20 bg-surface-2 shadow-xl shadow-black/20">
+          <Image
+            alt=""
+            className="brand-loading-glow h-16 w-16 object-contain"
+            height={1024}
+            src="/brand/loading-icon.png"
+            width={1536}
+          />
+        </div>
         <h2 className="mt-8 text-3xl font-semibold text-[#F7F5EF]">
           {mode === "discovery" ? "Encontrando seus melhores caminhos" : "Criando seu produto"}
         </h2>
@@ -1390,6 +1414,7 @@ function LoadingScreen({ mode, phrase }: { mode: LoadingMode; phrase: string }) 
 }
 
 function ProductsDashboard({
+  deletingProductId,
   error,
   isDownloadingPdf,
   message,
@@ -1399,6 +1424,7 @@ function ProductsDashboard({
   onViewProduct,
   products,
 }: {
+  deletingProductId: string | null;
   error: string | null;
   isDownloadingPdf: boolean;
   message: string | null;
@@ -1429,12 +1455,12 @@ function ProductsDashboard({
               </p>
             </div>
             <button
-              className="h-12 rounded-full bg-accent px-6 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/15 transition hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-45"
+              className="h-12 rounded-full bg-accent px-6 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/15 transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-45"
               disabled={reachedLimit}
               onClick={onCreateNew}
               type="button"
             >
-              Criar novo produto
+              {reachedLimit ? "Limite atingido" : "Criar novo produto"}
             </button>
           </div>
 
@@ -1451,7 +1477,7 @@ function ProductsDashboard({
             <p className="text-sm leading-6 text-muted">
               Limite atual do acesso
             </p>
-            <p className="mt-2 text-3xl font-semibold text-[#F7F5EF]">
+            <p className="mt-2 text-3xl font-semibold text-[#F7F5EF]" aria-label={`${products.length} de 2 produtos criados`}>
               {products.length}/2
             </p>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
@@ -1501,7 +1527,7 @@ function ProductsDashboard({
           <div className="grid gap-4 lg:grid-cols-2">
             {products.map((product) => (
               <article
-                className="rounded-[26px] border border-black/8 bg-white p-5 shadow-sm shadow-black/5"
+                className="rounded-[26px] border border-black/8 bg-white p-5 shadow-sm shadow-black/5 transition hover:-translate-y-0.5 hover:border-[#C9A84C]/60 hover:shadow-xl hover:shadow-black/10"
                 key={product.id}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -1523,14 +1549,14 @@ function ProductsDashboard({
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   <button
-                    className="h-11 rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C]"
+                    className="h-11 rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B7334] focus:ring-offset-2"
                     onClick={() => onViewProduct(product)}
                     type="button"
                   >
                     Visualizar
                   </button>
                   <button
-                    className="h-11 rounded-full border border-black/12 px-4 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] disabled:opacity-45"
+                    className="h-11 rounded-full border border-black/12 px-4 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] focus:outline-none focus:ring-2 focus:ring-[#8B7334] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
                     disabled={isDownloadingPdf}
                     onClick={() => onDownloadPdf(product.id)}
                     type="button"
@@ -1538,11 +1564,12 @@ function ProductsDashboard({
                     Baixar PDF
                   </button>
                   <button
-                    className="h-11 rounded-full border border-red-300/50 px-4 text-sm font-semibold text-red-700 transition hover:border-red-500 hover:text-red-800"
+                    className="h-11 rounded-full border border-red-300/50 px-4 text-sm font-semibold text-red-700 transition hover:border-red-500 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                    disabled={deletingProductId === product.id}
                     onClick={() => onDeleteProduct(product.id)}
                     type="button"
                   >
-                    Excluir
+                    {deletingProductId === product.id ? "Excluindo..." : "Excluir"}
                   </button>
                 </div>
               </article>
@@ -1550,7 +1577,14 @@ function ProductsDashboard({
           </div>
         ) : (
           <div className="rounded-[28px] border border-dashed border-black/15 bg-white/70 p-8 text-center">
-            <h3 className="text-2xl font-semibold text-ink">
+            <Image
+              alt=""
+              className="mx-auto h-20 w-20 object-contain"
+              height={1024}
+              src="/brand/logo-produto-pronto-icon.png"
+              width={1536}
+            />
+            <h3 className="mt-4 text-2xl font-semibold text-ink">
               Nenhum produto criado ainda.
             </h3>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#66635B]">
@@ -1613,8 +1647,15 @@ function ResultScreen({
       <div className="mb-7 rounded-[36px] border border-white/8 bg-surface p-6 shadow-2xl shadow-black/25 sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
-            <div className="mb-5">
+            <div className="mb-5 flex items-center gap-3">
               <BrandLogo size="md" variant="light" />
+              <Image
+                alt=""
+                className="hidden h-11 w-11 object-contain sm:block"
+                height={1024}
+                src="/brand/logo-produto-pronto-icon.png"
+                width={1536}
+              />
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
               {isSavedResult ? "Produto salvo" : "Resultado"}
