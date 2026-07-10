@@ -387,8 +387,8 @@ export function ProductProntoFlow() {
 
     try {
       await requestProductPdf(productId);
-    } catch {
-      setPersistenceMessage("Nao foi possivel gerar o PDF agora.");
+    } catch (error) {
+      setPersistenceMessage(getErrorMessage(error, "Nao foi possivel gerar o PDF agora."));
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -421,8 +421,8 @@ export function ProductProntoFlow() {
 
     try {
       await requestProductPdf(activeResultId);
-    } catch {
-      setPersistenceMessage("Nao foi possivel gerar o PDF agora.");
+    } catch (error) {
+      setPersistenceMessage(getErrorMessage(error, "Nao foi possivel gerar o PDF agora."));
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -645,7 +645,13 @@ async function requestProductPdf(resultId: string) {
   });
 
   if (!response.ok) {
-    throw new Error("Could not generate PDF.");
+    throw new Error(await readPdfErrorMessage(response));
+  }
+
+  const contentType = response.headers.get("Content-Type") ?? "";
+
+  if (!contentType.toLowerCase().includes("application/pdf")) {
+    throw new Error(await readPdfErrorMessage(response));
   }
 
   const blob = await response.blob();
@@ -657,6 +663,24 @@ async function requestProductPdf(resultId: string) {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
+}
+
+async function readPdfErrorMessage(response: Response) {
+  try {
+    const payload = (await response.json()) as { error?: unknown };
+
+    if (typeof payload.error === "string" && payload.error.trim().length > 0) {
+      return payload.error;
+    }
+  } catch {
+    // Keep the user-facing fallback when the response is not JSON.
+  }
+
+  return "Nao foi possivel gerar o PDF agora.";
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;
 }
 
 async function requestDeleteProduct(resultId: string) {

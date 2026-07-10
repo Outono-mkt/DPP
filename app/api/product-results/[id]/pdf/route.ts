@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { generateProductResultPdf } from "@/lib/pdf";
+import { ProductResultPdfError, generateProductResultPdf } from "@/lib/pdf";
 import {
   getAuthenticatedUser,
   getUserProductResult,
@@ -10,9 +10,12 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  let productId = "unknown";
+  let stage = "params";
+
   try {
-    const user = await getAuthenticatedUser(request);
     const { id } = await context.params;
+    productId = id || "missing";
 
     if (!id) {
       return NextResponse.json(
@@ -21,6 +24,10 @@ export async function GET(
       );
     }
 
+    stage = "auth";
+    const user = await getAuthenticatedUser(request);
+
+    stage = "load_product";
     const result = await getUserProductResult(user.id, id);
 
     if (!result) {
@@ -30,6 +37,7 @@ export async function GET(
       );
     }
 
+    stage = "render_pdf";
     const pdf = await generateProductResultPdf({
       createdAt: result.created_at,
       result: result.generated_result,
@@ -38,8 +46,9 @@ export async function GET(
       whatsappUrl: process.env.NEXT_PUBLIC_WHATSAPP_URL,
     });
 
+    stage = "buffer";
     if (pdf.byteLength === 0) {
-      throw new Error("PDF buffer is empty.");
+      throw new ProductResultPdfError("PDF buffer is empty.", stage, "renderToBuffer");
     }
 
     return new Response(Buffer.from(pdf), {
@@ -48,10 +57,56 @@ export async function GET(
         "Content-Type": "application/pdf",
       },
     });
-  } catch {
+  } catch (error) {
+    logPdfRouteError({
+      error,
+      productId,
+      stage: error instanceof ProductResultPdfError ? error.stage : stage,
+    });
+
     return NextResponse.json(
-      { error: "Nao foi possivel gerar o PDF." },
+      {
+        error: getPdfRouteErrorMessage(error),
+        code: "PDF_GENERATION_FAILED",
+        stage: error instanceof ProductResultPdfError ? error.stage : stage,
+      },
       { status: 500 },
     );
   }
+}
+
+function getPdfRouteErrorMessage(error: unknown) {
+  if (error instanceof ProductResultPdfError) {
+    if (error.stage === "normalization" || error.stage === "validation") {
+      return "Nao foi possivel preparar os dados deste produto para o PDF.";
+    }
+
+    if (error.stage === "render" || error.stage === "buffer") {
+      return "Nao foi possivel renderizar o PDF deste produto agora.";
+    }
+  }
+
+  return "Nao foi possivel gerar o PDF agora.";
+}
+
+function logPdfRouteError({
+  error,
+  productId,
+  stage,
+}: {
+  error: unknown;
+  productId: string;
+  stage: string;
+}) {
+  const originalError = error instanceof ProductResultPdfError ? error.originalError : error;
+  const message = originalError instanceof Error ? originalError.message : String(originalError);
+  const stack = originalError instanceof Error ? originalError.stack : undefined;
+
+  console.error("Product PDF generation failed", {
+    field: error instanceof ProductResultPdfError ? error.field : undefined,
+    message,
+    productId,
+    stack,
+    stage,
+  });
 }

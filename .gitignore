@@ -36,6 +36,7 @@ pnpm-debug.log*
 
 # local package cache
 .npm-cache/
+tmp/
 
 # system
 .DS_Store

@@ -27,6 +27,18 @@ type StrategicSection = {
   minPresenceAhead?: number;
 };
 
+export class ProductResultPdfError extends Error {
+  constructor(
+    message: string,
+    readonly stage: string,
+    readonly field?: string,
+    readonly originalError?: unknown,
+  ) {
+    super(message);
+    this.name = "ProductResultPdfError";
+  }
+}
+
 const COLORS = {
   black: "#0d0d0d",
   gold: "#c9a84c",
@@ -40,12 +52,25 @@ const COLORS = {
 };
 
 export async function generateProductResultPdf(input: PdfInput): Promise<Uint8Array> {
-  validateProductResultForPdf(input.result);
+  let safeResult: ProductResult;
 
-  const buffer = await renderToBuffer(<ProductResultDocument {...input} />);
+  try {
+    safeResult = normalizePdfProductResult(input.result);
+    validateProductResultForPdf(safeResult);
+  } catch (error) {
+    throw toPdfError("normalization", error);
+  }
 
-  if (buffer.byteLength === 0) {
-    throw new Error("PDF buffer is empty.");
+  let buffer: Buffer;
+
+  try {
+    buffer = await renderToBuffer(<ProductResultDocument {...input} result={safeResult} />);
+  } catch (error) {
+    throw toPdfError("render", error);
+  }
+
+  if (!buffer || buffer.byteLength === 0) {
+    throw new ProductResultPdfError("PDF buffer is empty.", "buffer", "renderToBuffer");
   }
 
   return new Uint8Array(buffer);
@@ -60,7 +85,7 @@ function ProductResultDocument({
 }: PdfInput) {
   const generatedDate = formatDate(createdAt);
   const format = selectedFormat?.trim() || "Formato definido pela estratégia";
-  const principalName = result.nomes[0];
+  const principalName = getFirstText(result.nomes, result.ideia || "Produto Pronto");
   const sections = getStrategicSections(result, format);
 
   return (
@@ -185,7 +210,7 @@ function StrategicSectionBlock({
 }
 
 function getStrategicSections(result: ProductResult, selectedFormat: string): StrategicSection[] {
-  return [
+  const sections: Array<StrategicSection | null> = [
     {
       title: "Oportunidade de Mercado",
       children: <Paragraph>{result.oportunidade}</Paragraph>,
@@ -265,6 +290,23 @@ function getStrategicSections(result: ProductResult, selectedFormat: string): St
       children: <ProjectStatus items={result.status_projeto} />,
     },
   ];
+
+  return sections.filter((section): section is StrategicSection => {
+    if (!section) return false;
+
+    const title = removeDiacritics(section.title).toLowerCase();
+
+    if (title.includes("sugestoes")) return result.nomes.length > 0;
+    if (title.includes("beneficios")) return result.beneficios.length > 0;
+    if (title.includes("perfis")) return result.perfis_clientes.length > 0;
+    if (title.includes("frases")) return result.frases_cliente.length > 0;
+    if (title.includes("estrutura")) return result.estrutura.length > 0;
+    if (title.includes("objecoes")) return result.objecoes.length > 0;
+    if (title.includes("plano")) return result.plano_execucao.length > 0;
+    if (title.includes("status")) return result.status_projeto.length > 0;
+
+    return true;
+  });
 }
 
 function NameCards({ names }: { names: ProductResult["nomes"] }) {
@@ -538,6 +580,54 @@ function removeDiacritics(text: string) {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+function normalizePdfProductResult(value: unknown): ProductResult {
+  const result = value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Partial<ProductResult>)
+    : {};
+  const ideia = asPdfString(result.ideia, "Produto digital pronto para validar");
+  const promessa = asPdfString(result.promessa, "Uma transformacao clara para o cliente certo");
+  const estrutura = toPdfStringArray(result.estrutura);
+  const mecanismo = normalizePdfStringObject(result.mecanismo, {
+    nome: "Execucao Guiada",
+    explicacao: "Um caminho pratico para transformar conhecimento em entrega vendavel.",
+  });
+
+  return {
+    oportunidade: asPdfString(
+      result.oportunidade,
+      "Existe uma oportunidade de transformar conhecimento pratico em uma oferta simples, especifica e vendavel.",
+    ),
+    nicho: asPdfString(result.nicho, "Publico especifico com uma dor clara."),
+    ideia,
+    nomes: toPdfStringArray(result.nomes) as ProductResult["nomes"],
+    promessa,
+    mecanismo,
+    beneficios: toPdfStringArray(result.beneficios) as ProductResult["beneficios"],
+    perfis_clientes: normalizePdfProfiles(result.perfis_clientes),
+    frases_cliente: toPdfStringArray(result.frases_cliente) as ProductResult["frases_cliente"],
+    estrutura,
+    objecoes: normalizePdfObjections(result.objecoes),
+    como_vender: normalizePdfStringObject(result.como_vender, {
+      angulo_principal: "Apresente a promessa principal de forma direta.",
+      problema_de_entrada: "Mostre a situacao que o cliente reconhece.",
+      transformacao_destacada: promessa,
+      prova_recomendada: "Use exemplos simples, bastidores ou demonstracao do metodo.",
+      cta_recomendado: "Convide para o primeiro passo.",
+    }),
+    preco: asPdfString(result.preco, "Faixa de preco a validar com os primeiros compradores."),
+    proximo_passo: asPdfString(result.proximo_passo, "Validar a promessa, montar a entrega e fazer a primeira oferta."),
+    plano_execucao: normalizePdfExecutionPlan(result.plano_execucao),
+    status_projeto: normalizePdfStatus(result.status_projeto),
+    cta_consultoria: normalizePdfStringObject(result.cta_consultoria, {
+      titulo: "Seu produto ja esta estruturado.",
+      contexto: "Agora comeca a etapa mais importante: transformar essa estrategia em vendas reais.",
+      descricao:
+        "Na Consultoria Plano de Acao de 30 dias, eu monto com voce um plano personalizado para construir, lancar e vender esse produto da forma mais rapida e organizada possivel.",
+      botao: "Quero montar meu Plano de Acao de 30 dias",
+    }),
+  };
+}
+
 function getProductChoiceReasons(result: ProductResult, format: string) {
   return [
     `Resolve uma dor urgente: ${result.nicho}`,
@@ -545,7 +635,7 @@ function getProductChoiceReasons(result: ProductResult, format: string) {
     `Nasce de um mecanismo claro: ${result.mecanismo.nome}`,
     `Pode ser produzido rapidamente no formato ${format}`,
     "Possui valor percebido porque entrega uma transformacao especifica",
-    `Abre caminho para proximas ofertas a partir de ${result.nomes[0]}`,
+    `Abre caminho para proximas ofertas a partir de ${getFirstText(result.nomes, result.ideia)}`,
   ];
 }
 
@@ -630,43 +720,146 @@ function getExecutiveChecklist(format: string) {
   ];
 }
 
+function normalizePdfStringObject<T extends Record<string, string>>(
+  value: unknown,
+  defaults: T,
+): T {
+  const source = value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+  return Object.fromEntries(
+    Object.entries(defaults).map(([key, fallback]) => [key, asPdfString(source[key], fallback)]),
+  ) as T;
+}
+
+function normalizePdfProfiles(value: unknown): ProductResult["perfis_clientes"] {
+  if (!Array.isArray(value)) {
+    return [] as unknown as ProductResult["perfis_clientes"];
+  }
+
+  return value
+    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+    .map((item) => {
+      const profile = item as Record<string, unknown>;
+      return {
+        titulo: asPdfString(profile.titulo, "Perfil sem titulo"),
+        descricao: asPdfString(profile.descricao, "Descricao nao informada."),
+      };
+    }) as ProductResult["perfis_clientes"];
+}
+
+function normalizePdfObjections(value: unknown): ProductResult["objecoes"] {
+  if (!Array.isArray(value)) {
+    return [] as unknown as ProductResult["objecoes"];
+  }
+
+  return value
+    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+    .map((item) => {
+      const objection = item as Record<string, unknown>;
+      return {
+        objecao: asPdfString(objection.objecao, "Objecao nao informada"),
+        porque_aparece: asPdfString(objection.porque_aparece, "Motivo nao informado."),
+        como_responder: asPdfString(objection.como_responder, "Responder com clareza e prova simples."),
+      };
+    }) as ProductResult["objecoes"];
+}
+
+function normalizePdfExecutionPlan(value: unknown): ProductResult["plano_execucao"] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+    .map((item) => {
+      const group = item as Record<string, unknown>;
+      return {
+        etapa: asPdfString(group.etapa, "Execucao"),
+        itens: toPdfStringArray(group.itens),
+      };
+    })
+    .filter((group) => group.itens.length > 0);
+}
+
+function normalizePdfStatus(value: unknown): ProductResult["status_projeto"] {
+  const validStatus = ["concluido", "em_andamento", "pendente"] as const;
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item) => item && typeof item === "object" && !Array.isArray(item))
+    .map((item) => {
+      const status = item as Record<string, unknown>;
+      const statusValue = asPdfString(status.status, "pendente");
+      return {
+        etapa: asPdfString(status.etapa, "Etapa"),
+        status: validStatus.includes(statusValue as ProductResult["status_projeto"][number]["status"])
+          ? (statusValue as ProductResult["status_projeto"][number]["status"])
+          : "pendente",
+      };
+    });
+}
+
+function toPdfStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(isPdfString).map((item) => item.trim());
+}
+
+function getFirstText(values: string[], fallback: string) {
+  return values.find((value) => value.trim().length > 0) ?? fallback;
+}
+
+function asPdfString(value: unknown, fallback = "") {
+  return isPdfString(value) ? value.trim() : fallback;
+}
+
+function isPdfString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function toPdfError(stage: string, error: unknown) {
+  if (error instanceof ProductResultPdfError) {
+    return error;
+  }
+
+  return new ProductResultPdfError(getErrorMessage(error), stage, undefined, error);
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown PDF generation error.";
+}
+
 function validateProductResultForPdf(result: ProductResult) {
-  const requiredStrings = [
-    result.oportunidade,
-    result.nicho,
-    result.ideia,
-    result.promessa,
-    result.mecanismo.nome,
-    result.mecanismo.explicacao,
-    result.preco,
-    result.proximo_passo,
-    result.como_vender.angulo_principal,
-    result.como_vender.problema_de_entrada,
-    result.como_vender.transformacao_destacada,
-    result.como_vender.prova_recomendada,
-    result.como_vender.cta_recomendado,
-    result.cta_consultoria.titulo,
-    result.cta_consultoria.contexto,
-    result.cta_consultoria.descricao,
-    result.cta_consultoria.botao,
+  const requiredStrings: Array<[string, string]> = [
+    ["oportunidade", result.oportunidade],
+    ["nicho", result.nicho],
+    ["ideia", result.ideia],
+    ["promessa", result.promessa],
+    ["mecanismo.nome", result.mecanismo.nome],
+    ["mecanismo.explicacao", result.mecanismo.explicacao],
+    ["preco", result.preco],
+    ["proximo_passo", result.proximo_passo],
+    ["cta_consultoria.titulo", result.cta_consultoria.titulo],
+    ["cta_consultoria.contexto", result.cta_consultoria.contexto],
+    ["cta_consultoria.descricao", result.cta_consultoria.descricao],
+    ["cta_consultoria.botao", result.cta_consultoria.botao],
   ];
 
-  const requiredArrays = [
-    result.nomes,
-    result.beneficios,
-    result.perfis_clientes,
-    result.frases_cliente,
-    result.estrutura,
-    result.objecoes,
-    result.plano_execucao,
-    result.status_projeto,
-  ];
+  const invalid = requiredStrings.find(([, value]) => !isPdfString(value));
 
-  if (
-    requiredStrings.some((value) => typeof value !== "string" || value.trim().length === 0) ||
-    requiredArrays.some((value) => !Array.isArray(value) || value.length === 0)
-  ) {
-    throw new Error("Product result is incomplete for PDF generation.");
+  if (invalid) {
+    throw new ProductResultPdfError(
+      "Product result is incomplete for PDF generation.",
+      "validation",
+      invalid[0],
+    );
   }
 }
 
