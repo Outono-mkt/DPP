@@ -473,7 +473,7 @@ export function ProductProntoFlow() {
     <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
       <div
         className={`mx-auto flex min-h-[calc(100vh-3rem)] w-full flex-col ${
-          isAuthenticated ? "max-w-[1240px]" : "max-w-[1120px] justify-center"
+          isAuthenticated ? "max-w-[1240px]" : "max-w-none justify-center"
         }`}
       >
         {isAuthenticated ? (
@@ -772,40 +772,57 @@ function AccessScreen({
   const [password, setPassword] = useState("");
 
   return (
-    <section className="grid w-full items-center gap-7 lg:grid-cols-[1.05fr_0.95fr]">
-      <div className="order-2 overflow-hidden rounded-[36px] border border-white/8 bg-surface shadow-2xl shadow-black/30 lg:order-1">
-        <Image
-          alt="Composição visual Produto Pronto"
-          className="h-full min-h-[260px] w-full object-cover"
-          height={1024}
-          priority
-          src="/brand/login-hero.png"
-          width={1536}
-        />
+    <section className="grid min-h-[calc(100vh-3rem)] w-full overflow-hidden rounded-[36px] border border-white/8 bg-[#0D0D0D] shadow-2xl shadow-black/30 md:grid-cols-[45fr_55fr]">
+      <div
+        className="flex min-h-[360px] items-start bg-cover bg-[left_center] bg-no-repeat p-8 sm:min-h-[440px] sm:p-12 lg:p-20"
+        style={{
+          backgroundImage:
+            'linear-gradient(180deg, rgba(13,13,13,.10), rgba(13,13,13,.18)), url("/brand/login-hero.png")',
+        }}
+      >
+        <div className="max-w-[560px]">
+          <BrandLogo height={78} width={320} variant="horizontal" />
+          <h1 className="mt-12 max-w-[560px] text-[2.75rem] font-bold leading-[1.08] text-white sm:text-[3.6rem] lg:text-[4.35rem]">
+            Transforme seu conhecimento
+            <br />
+            em um
+            <br />
+            <span className="text-accent">produto digital.</span>
+          </h1>
+        </div>
       </div>
 
-      <div className="order-1 lg:order-2">
-        <div className="mb-8">
-          <BrandLogo size="lg" variant="light" />
-          <h1 className="mt-8 text-4xl font-semibold leading-tight text-foreground sm:text-5xl">
-            Entre para desenhar seu primeiro produto digital.
-          </h1>
-          <p className="mt-5 max-w-md text-sm leading-6 text-muted">
-            Use o e-mail da compra e a senha enviada apos a confirmacao do pagamento.
-          </p>
-        </div>
-
+      <div className="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-14">
         <form
-          className="space-y-5 rounded-[32px] border border-white/8 bg-surface p-5 shadow-2xl shadow-black/30 sm:p-7"
+          className="w-full max-w-[520px] space-y-5 rounded-[28px] border border-white/8 bg-[#141414] p-6 shadow-2xl shadow-black/35 sm:p-9 lg:p-10"
           onSubmit={(event) => {
             event.preventDefault();
             void onEnter(email, password);
           }}
         >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/8 bg-[#1B1B1B] text-accent">
+            <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M7.5 10V7.7C7.5 5.2 9.5 3.2 12 3.2s4.5 2 4.5 4.5V10"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="1.8"
+              />
+              <path
+                d="M6.8 10h10.4c.9 0 1.6.7 1.6 1.6v6.1c0 .9-.7 1.6-1.6 1.6H6.8c-.9 0-1.6-.7-1.6-1.6v-6.1c0-.9.7-1.6 1.6-1.6Z"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
+              <path d="M12 14v2.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+            </svg>
+          </div>
+          <h2 className="text-center text-3xl font-bold leading-tight text-white sm:text-4xl">
+            Acesse <span className="text-accent">sua conta</span>
+          </h2>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">E-mail</span>
+            <span className="mb-2 block text-sm font-medium text-white">Email</span>
             <input
-              className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/15"
+              className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15"
               onChange={(event) => setEmail(event.target.value)}
               placeholder="seuemail@exemplo.com"
               type="email"
@@ -814,15 +831,31 @@ function AccessScreen({
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-[#F7F5EF]">Senha</span>
+            <span className="mb-2 block text-sm font-medium text-white">Senha</span>
             <input
-              className="h-[52px] w-full rounded-2xl border border-white/10 bg-surface-2 px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/15"
+              className="h-14 w-full rounded-2xl border border-white/8 bg-[#1B1B1B] px-4 text-base text-white outline-none transition placeholder:text-[#A8A8A8] focus:border-accent focus:ring-4 focus:ring-accent/15"
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Senha enviada por e-mail"
               type="password"
               value={password}
             />
           </label>
+
+          <div className="flex items-center justify-between gap-4 text-sm text-[#A8A8A8]">
+            <label className="flex min-w-0 items-center gap-2">
+              <input
+                className="h-4 w-4 rounded border-white/20 bg-[#1B1B1B] accent-[#C9A84C]"
+                type="checkbox"
+              />
+              <span>Lembrar meu acesso</span>
+            </label>
+            <button
+              className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414]"
+              type="button"
+            >
+              Esqueci minha senha
+            </button>
+          </div>
 
           {error ? (
             <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
@@ -831,12 +864,24 @@ function AccessScreen({
           ) : null}
 
           <button
-            className="h-[52px] w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-55"
+            className="h-14 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/10 transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-[#141414] disabled:cursor-not-allowed disabled:opacity-55"
             disabled={isSubmitting}
             type="submit"
           >
             {isSubmitting ? "Entrando..." : "Entrar"}
           </button>
+          <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm font-medium text-[#A8A8A8]">
+            <svg aria-hidden="true" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M12 3.4 18.5 6v5.2c0 4.1-2.6 7.8-6.5 9.1-3.9-1.3-6.5-5-6.5-9.1V6L12 3.4Z"
+                stroke="currentColor"
+                strokeLinejoin="round"
+                strokeWidth="1.8"
+              />
+              <path d="m9.4 12 1.7 1.7 3.7-4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+            </svg>
+            <span>Ambiente seguro e protegido</span>
+          </div>
         </form>
       </div>
     </section>
