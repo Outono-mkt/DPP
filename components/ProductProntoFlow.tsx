@@ -237,8 +237,8 @@ export function ProductProntoFlow() {
   }
 
   function goBack() {
-    setFlowError(null);
-    setCurrentQuestion((current) => Math.max(current - 1, 0));
+    resetCreationFlow();
+    setStep("dashboard");
   }
 
   async function goForward() {
@@ -1063,11 +1063,10 @@ function OnboardingScreen({
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <button
             className="h-12 flex-1 rounded-2xl border border-black/12 px-4 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] disabled:cursor-not-allowed disabled:opacity-35"
-            disabled={currentQuestion === 0}
             onClick={onBack}
             type="button"
           >
-            Voltar
+            Voltar ao Dashboard
           </button>
           <button
             className="h-12 flex-1 rounded-2xl bg-accent px-4 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-45"
@@ -1575,8 +1574,12 @@ function ProductsDashboard({
   products: SavedProductSummary[];
 }) {
   const reachedLimit = products.length >= 2;
-  const availableSlots = Math.max(2 - products.length, 0);
   const lastFormat = products[0]?.selected_format ?? "Nenhum ainda";
+  const lastProduct = products[0] ?? null;
+  const lastProductName = lastProduct
+    ? (lastProduct.generated_result.nomes[0] ?? lastProduct.generated_result.ideia)
+    : "Nenhum ainda";
+  const lastProductHelper = lastProduct ? formatDisplayDate(lastProduct.created_at) : "Crie seu primeiro produto";
   const heroCopy = getDashboardHeroCopy(products.length);
   const libraryId = "product-library";
 
@@ -1629,7 +1632,7 @@ function ProductsDashboard({
       `}</style>
 
       <div className="mb-6 rounded-[28px] border border-white/8 bg-[linear-gradient(135deg,rgba(22,22,22,.98),rgba(12,12,12,.98))] p-6 shadow-[0_24px_70px_rgba(0,0,0,.28)] sm:p-8 lg:p-12 xl:p-14">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,40%)] lg:items-center">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,45%)] lg:items-center">
           <div className="max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
               Dashboard
@@ -1651,14 +1654,14 @@ function ProductsDashboard({
               {heroCopy.buttonLabel}
             </button>
           </div>
-          <div aria-hidden="true" className="flex justify-center lg:justify-end">
+          <div aria-hidden="true" className="flex justify-center overflow-visible lg:justify-end">
             <Image
               alt=""
-              className="dashboard-hero-illustration h-auto w-full max-w-[300px] object-contain sm:max-w-[360px] lg:max-w-[520px]"
-              height={720}
+              className="dashboard-hero-illustration h-auto w-full max-w-[320px] object-contain sm:max-w-[420px] lg:max-w-[680px] lg:scale-[1.18]"
+              height={820}
               priority
               src="/illustrations/dashboard-hero.webp"
-              width={820}
+              width={980}
             />
           </div>
         </div>
@@ -1666,22 +1669,22 @@ function ProductsDashboard({
 
       <div className="mb-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <MetricCard
-          helper="de 2 disponíveis"
+          helper="de 2 permitidos"
           icon="products"
           label="Produtos criados"
           value={String(products.length)}
-        />
-        <MetricCard
-          helper="restantes"
-          icon="slots"
-          label="Disponíveis"
-          value={String(availableSlots)}
         />
         <MetricCard
           helper={products.length > 0 ? "Produto mais recente" : "Crie seu primeiro produto"}
           icon="format"
           label="Último formato usado"
           value={lastFormat}
+        />
+        <MetricCard
+          helper={lastProductHelper}
+          icon="product"
+          label="Último produto"
+          value={lastProductName}
         />
       </div>
 
@@ -1838,7 +1841,7 @@ function MetricCard({
   value,
 }: {
   helper: string;
-  icon: "products" | "slots" | "format";
+  icon: "products" | "slots" | "format" | "product";
   label: string;
   value: string;
 }) {
@@ -1877,7 +1880,7 @@ function BoxIcon() {
   );
 }
 
-function MetricIcon({ icon }: { icon: "products" | "slots" | "format" }) {
+function MetricIcon({ icon }: { icon: "products" | "slots" | "format" | "product" }) {
   if (icon === "slots") {
     return (
       <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
