@@ -114,6 +114,7 @@ export function ProductProntoFlow() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("Criador");
 
   const resetCreationFlow = useCallback(() => {
     setAnswers(initialAnswers);
@@ -134,6 +135,7 @@ export function ProductProntoFlow() {
     resetCreationFlow();
     setLoginError(null);
     setUserEmail(null);
+    setUserName("Criador");
     setSavedProducts([]);
     setHistoryError(null);
     setStep("access");
@@ -151,6 +153,7 @@ export function ProductProntoFlow() {
 
         const email = data.session?.user.email ?? null;
         setUserEmail(email);
+        setUserName(getUserDisplayName(data.session?.user));
         setStep(email ? "dashboard" : "access");
         setIsCheckingSession(false);
 
@@ -171,6 +174,7 @@ export function ProductProntoFlow() {
       const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
         const email = session?.user.email ?? null;
         setUserEmail(email);
+        setUserName(getUserDisplayName(session?.user));
 
         if (!email) resetFlowToAccess();
       });
@@ -484,7 +488,7 @@ export function ProductProntoFlow() {
           <AppTopBar
             createdCount={savedProducts.length}
             onSignOut={signOut}
-            userEmail={userEmail}
+            userName={userName}
           />
         ) : null}
 
@@ -548,28 +552,33 @@ export function ProductProntoFlow() {
 function AppTopBar({
   createdCount,
   onSignOut,
-  userEmail,
+  userName,
 }: {
   createdCount: number;
   onSignOut: () => void;
-  userEmail: string | null;
+  userName: string;
 }) {
+  const headerMessage = getDashboardHeaderMessage(createdCount);
+
   return (
-    <header className="mb-7 flex flex-col gap-4 rounded-[28px] border border-white/8 bg-surface/92 px-4 py-4 shadow-2xl shadow-black/25 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-      <div className="flex min-w-0 items-center gap-3">
+    <header className="mb-7 flex flex-col gap-5 rounded-[28px] border border-white/8 bg-[#151515]/95 px-4 py-4 shadow-2xl shadow-black/25 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
         <div className="sm:hidden">
-          <BrandLogo size="md" variant="icon" />
+          <BrandLogo size="lg" variant="icon" />
         </div>
-        <div className="hidden sm:block">
-          <BrandLogo size="md" variant="light" />
+        <div className="hidden shrink-0 sm:block">
+          <BrandLogo height={64} width={210} variant="horizontal" />
         </div>
-        <span className="hidden truncate border-l border-white/10 pl-4 text-sm text-muted md:block">
-          {userEmail}
-        </span>
+        <div className="min-w-0 sm:border-l sm:border-white/10 sm:pl-5">
+          <p className="truncate text-xl font-semibold text-[#F7F5EF]">
+            Oi, {userName}! <span aria-hidden="true">👋</span>
+          </p>
+          <p className="mt-1 text-sm leading-5 text-muted">{headerMessage}</p>
+        </div>
       </div>
-      <div className="flex items-center justify-between gap-3 sm:justify-end">
-        <span className="rounded-full border border-white/10 bg-surface-2 px-4 py-2 text-xs font-semibold text-[#F7F5EF]">
-          {createdCount} de 2 produtos
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:justify-end">
+        <span className="rounded-full border border-white/10 bg-[#222222] px-4 py-2 text-xs font-semibold text-[#F7F5EF]">
+          {createdCount} de 2 produtos utilizados
         </span>
         <button
           className="h-10 rounded-full border border-white/10 px-5 text-sm font-semibold text-[#F7F5EF] transition hover:border-accent hover:text-accent"
@@ -715,6 +724,69 @@ async function getAuthHeaders() {
   return {
     Authorization: `Bearer ${token}`,
   };
+}
+
+function getUserDisplayName(
+  user:
+    | {
+        email?: string | null;
+        user_metadata?: Record<string, unknown> | null;
+      }
+    | null
+    | undefined,
+) {
+  const metadata = user?.user_metadata ?? {};
+  const metadataName =
+    getStringMetadata(metadata, "name") ??
+    getStringMetadata(metadata, "full_name") ??
+    getStringMetadata(metadata, "display_name") ??
+    getStringMetadata(metadata, "first_name");
+
+  if (metadataName) return toReadableName(metadataName);
+
+  const profileName = getProfileMetadataName(metadata);
+
+  if (profileName) return toReadableName(profileName);
+
+  const emailPrefix = user?.email?.split("@")[0] ?? "";
+  const firstEmailChunk = emailPrefix.split(/[._-]/).find(Boolean) ?? "";
+
+  return firstEmailChunk ? toReadableName(firstEmailChunk) : "Criador";
+}
+
+function getStringMetadata(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function getProfileMetadataName(metadata: Record<string, unknown>) {
+  const profile = metadata.profile;
+
+  if (!profile || typeof profile !== "object") return null;
+
+  const profileRecord = profile as Record<string, unknown>;
+
+  return (
+    getStringMetadata(profileRecord, "name") ??
+    getStringMetadata(profileRecord, "full_name") ??
+    getStringMetadata(profileRecord, "display_name") ??
+    getStringMetadata(profileRecord, "first_name")
+  );
+}
+
+function toReadableName(value: string) {
+  const [firstName = ""] = value.trim().split(/\s+/);
+  const cleanName = firstName.replace(/[^a-zA-ZÀ-ÿ]/g, "");
+
+  if (!cleanName) return "Criador";
+
+  return cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase();
+}
+
+function getDashboardHeaderMessage(createdCount: number) {
+  if (createdCount <= 0) return "Vamos criar seu primeiro produto digital.";
+  if (createdCount === 1) return "Seu primeiro produto está pronto. Vamos continuar.";
+  return "Seus dois produtos estão disponíveis.";
 }
 
 function buildFinalGenerationInput(
@@ -1505,57 +1577,112 @@ function ProductsDashboard({
   const reachedLimit = products.length >= 2;
   const availableSlots = Math.max(2 - products.length, 0);
   const lastFormat = products[0]?.selected_format ?? "Nenhum ainda";
+  const heroCopy = getDashboardHeroCopy(products.length);
+  const libraryId = "product-library";
+
+  function handleHeroAction() {
+    if (reachedLimit) {
+      document.getElementById(libraryId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    onCreateNew();
+  }
 
   return (
-    <section className="w-full pb-10">
-      <div className="mb-7 grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-[34px] border border-white/8 bg-surface p-6 shadow-2xl shadow-black/25 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
-                Dashboard
-              </p>
-              <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.05] text-[#F7F5EF] sm:text-5xl">
-                Seus produtos digitais em construção.
-              </h1>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-muted">
-                Acompanhe suas estratégias salvas, baixe o PDF e crie uma nova direção quando houver espaço disponível.
-              </p>
-            </div>
+    <section className="dashboard-shell w-full pb-10">
+      <style>{`
+        @keyframes dashboard-fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes dashboard-float {
+          0%, 100% {
+            transform: translateY(-4px);
+          }
+          50% {
+            transform: translateY(4px);
+          }
+        }
+
+        .dashboard-shell {
+          animation: dashboard-fade-in 520ms ease-out both;
+        }
+
+        .dashboard-hero-illustration {
+          animation: dashboard-fade-in 620ms ease-out both, dashboard-float 10s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dashboard-shell,
+          .dashboard-hero-illustration {
+            animation: none;
+          }
+        }
+      `}</style>
+
+      <div className="mb-6 rounded-[28px] border border-white/8 bg-[linear-gradient(135deg,rgba(22,22,22,.98),rgba(12,12,12,.98))] p-6 shadow-[0_24px_70px_rgba(0,0,0,.28)] sm:p-8 lg:p-12 xl:p-14">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(300px,40%)] lg:items-center">
+          <div className="max-w-2xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
+              Dashboard
+            </p>
+            <h1 className="mt-4 text-4xl font-semibold leading-[1.05] text-[#F7F5EF] sm:text-5xl lg:text-6xl">
+              {heroCopy.title}
+              <br />
+              <span className="text-accent">{heroCopy.highlight}</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-sm leading-6 text-muted sm:text-base">
+              {heroCopy.description}
+            </p>
             <button
-              className="h-12 rounded-full bg-accent px-6 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/15 transition hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={reachedLimit}
-              onClick={onCreateNew}
+              className="mt-8 inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#E5CB78_0%,#C9A84C_58%,#B98C2D_100%)] px-7 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-accent/10 transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(201,168,76,.22)] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background sm:w-auto"
+              onClick={handleHeroAction}
               type="button"
             >
-              {reachedLimit ? "Limite atingido" : "Criar novo produto"}
+              {!reachedLimit ? <PlusIcon /> : null}
+              {heroCopy.buttonLabel}
             </button>
           </div>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <MetricCard label="Criados" value={String(products.length)} />
-            <MetricCard label="Disponíveis" value={String(availableSlots)} />
-            <MetricCard label="Último formato" value={lastFormat} />
+          <div aria-hidden="true" className="flex justify-center lg:justify-end">
+            <Image
+              alt=""
+              className="dashboard-hero-illustration h-auto w-full max-w-[300px] object-contain sm:max-w-[360px] lg:max-w-[520px]"
+              height={720}
+              priority
+              src="/illustrations/dashboard-hero.webp"
+              width={820}
+            />
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col justify-between rounded-[34px] border border-white/8 bg-surface-2 p-6 shadow-2xl shadow-black/20 sm:p-8">
-          <BrandLogo size="md" variant="light" />
-          <div className="mt-8">
-            <p className="text-sm leading-6 text-muted">
-              Limite atual do acesso
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-[#F7F5EF]" aria-label={`${products.length} de 2 produtos criados`}>
-              {products.length}/2
-            </p>
-            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-accent transition-all duration-300"
-                style={{ width: `${Math.min((products.length / 2) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
+      <div className="mb-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <MetricCard
+          helper="de 2 disponíveis"
+          icon="products"
+          label="Produtos criados"
+          value={String(products.length)}
+        />
+        <MetricCard
+          helper="restantes"
+          icon="slots"
+          label="Disponíveis"
+          value={String(availableSlots)}
+        />
+        <MetricCard
+          helper={products.length > 0 ? "Produto mais recente" : "Crie seu primeiro produto"}
+          icon="format"
+          label="Último formato usado"
+          value={lastFormat}
+        />
       </div>
 
       {error ? (
@@ -1572,18 +1699,21 @@ function ProductsDashboard({
 
       {reachedLimit ? (
         <p className="mb-4 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-5 text-[#F7F5EF]">
-          Você já criou seus 2 produtos disponíveis neste acesso. Para criar outro, exclua um produto antigo ou fale comigo.
+          Você já criou seus 2 produtos disponíveis neste acesso. Para criar outro, exclua um produto antigo.
         </p>
       ) : null}
 
-      <div className="rounded-[34px] bg-paper p-4 text-ink shadow-2xl shadow-black/20 sm:p-6 lg:p-8">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div
+        className="scroll-mt-6 rounded-[28px] bg-[#F8F7F3] p-5 text-ink shadow-2xl shadow-black/20 sm:p-8 lg:p-10 xl:p-11"
+        id={libraryId}
+      >
+        <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8B7334]">
               Biblioteca
             </p>
             <h2 className="mt-2 text-3xl font-semibold leading-tight">
-              Meus Produtos
+              Seus produtos
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-6 text-[#66635B]">
@@ -1593,76 +1723,77 @@ function ProductsDashboard({
 
         {products.length > 0 ? (
           <div className="grid gap-4 lg:grid-cols-2">
-            {products.map((product) => (
-              <article
-                className="rounded-[26px] border border-black/8 bg-white p-5 shadow-sm shadow-black/5 transition hover:-translate-y-0.5 hover:border-[#C9A84C]/60 hover:shadow-xl hover:shadow-black/10"
-                key={product.id}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8B7334]">
-                      {product.selected_format}
-                    </p>
-                    <h3 className="mt-3 text-xl font-semibold leading-snug text-ink">
-                      {product.generated_result.nomes[0] ?? product.generated_result.ideia}
-                    </h3>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[#EFE7D2] px-3 py-1 text-xs font-semibold text-[#5F4B19]">
-                    {formatDisplayDate(product.created_at)}
-                  </span>
-                </div>
-                <p className="mt-4 line-clamp-3 text-sm leading-6 text-[#56534D]">
-                  {product.generated_result.promessa}
-                </p>
+            {products.map((product) => {
+              const productName = product.generated_result.nomes[0] ?? product.generated_result.ideia;
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  <button
-                    className="h-11 rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B7334] focus:ring-offset-2"
-                    onClick={() => onViewProduct(product)}
-                    type="button"
-                  >
-                    Visualizar
-                  </button>
-                  <button
-                    className="h-11 rounded-full border border-black/12 px-4 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] focus:outline-none focus:ring-2 focus:ring-[#8B7334] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={isDownloadingPdf}
-                    onClick={() => onDownloadPdf(product.id)}
-                    type="button"
-                  >
-                    Baixar PDF
-                  </button>
-                  <button
-                    className="h-11 rounded-full border border-red-300/50 px-4 text-sm font-semibold text-red-700 transition hover:border-red-500 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={deletingProductId === product.id}
-                    onClick={() => onDeleteProduct(product.id)}
-                    type="button"
-                  >
-                    {deletingProductId === product.id ? "Excluindo..." : "Excluir"}
-                  </button>
-                </div>
-              </article>
-            ))}
+              return (
+                <article
+                  className="rounded-[24px] border border-black/8 bg-white p-5 shadow-sm shadow-black/5 transition hover:-translate-y-0.5 hover:border-[#C9A84C]/60 hover:shadow-xl hover:shadow-black/10 sm:p-6"
+                  key={product.id}
+                >
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8B7334]">
+                        {product.selected_format}
+                      </p>
+                      <h3 className="mt-3 text-xl font-semibold leading-snug text-ink">
+                        {productName}
+                      </h3>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[#EFE7D2] px-3 py-1 text-xs font-semibold text-[#5F4B19]">
+                      {formatDisplayDate(product.created_at)}
+                    </span>
+                  </div>
+                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-[#56534D]">
+                    {product.generated_result.promessa}
+                  </p>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <button
+                      className="h-12 rounded-2xl bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:-translate-y-0.5 hover:bg-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#8B7334] focus:ring-offset-2"
+                      onClick={() => onViewProduct(product)}
+                      type="button"
+                    >
+                      Visualizar
+                    </button>
+                    <button
+                      className="h-12 rounded-2xl border border-black/12 px-4 text-sm font-semibold text-ink transition hover:-translate-y-0.5 hover:border-[#8B7334] hover:text-[#8B7334] focus:outline-none focus:ring-2 focus:ring-[#8B7334] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                      disabled={isDownloadingPdf}
+                      onClick={() => onDownloadPdf(product.id)}
+                      type="button"
+                    >
+                      Baixar PDF
+                    </button>
+                    <button
+                      className="h-12 rounded-2xl border border-red-300/50 px-4 text-sm font-semibold text-red-700 transition hover:-translate-y-0.5 hover:border-red-500 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
+                      disabled={deletingProductId === product.id}
+                      onClick={() => onDeleteProduct(product.id)}
+                      type="button"
+                    >
+                      {deletingProductId === product.id ? "Excluindo..." : "Excluir"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
-          <div className="rounded-[28px] border border-dashed border-black/15 bg-white/70 p-8 text-center">
-            <Image
-              alt=""
-              className="mx-auto h-20 w-20 object-contain"
-              height={1024}
-              src="/brand/logo-produto-pronto-icon.png"
-              width={1536}
-            />
+          <div className="flex min-h-[230px] flex-col items-center justify-center rounded-[22px] border border-dashed border-black/15 bg-white/60 p-8 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#EFE7D2] text-[#8B7334]">
+              <BoxIcon />
+            </div>
             <h3 className="mt-4 text-2xl font-semibold text-ink">
-              Nenhum produto criado ainda.
+              Você ainda não criou nenhum produto.
             </h3>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#66635B]">
-              Comece pelo primeiro diagnóstico e salve sua estratégia para consultar ou baixar depois.
+              Comece agora e receba sua estratégia personalizada.
             </p>
             <button
-              className="mt-6 h-12 rounded-full bg-accent px-6 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
+              className="mt-6 inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#E5CB78_0%,#C9A84C_58%,#B98C2D_100%)] px-7 text-sm font-bold text-[#0D0D0D] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(201,168,76,.22)]"
               onClick={onCreateNew}
               type="button"
             >
+              <PlusIcon />
               Criar meu primeiro produto
             </button>
           </div>
@@ -1672,13 +1803,110 @@ function ProductsDashboard({
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function getDashboardHeroCopy(createdCount: number) {
+  if (createdCount <= 0) {
+    return {
+      title: "Seus produtos digitais",
+      highlight: "em construção.",
+      description:
+        "Responda algumas perguntas e receba uma estratégia completa para validar e vender sua ideia.",
+      buttonLabel: "Criar meu primeiro produto",
+    };
+  }
+
+  if (createdCount === 1) {
+    return {
+      title: "Seu primeiro produto",
+      highlight: "já está pronto.",
+      description: "Você pode abrir o produto criado ou começar um segundo produto.",
+      buttonLabel: "Criar segundo produto",
+    };
+  }
+
+  return {
+    title: "Seus dois produtos",
+    highlight: "estão prontos.",
+    description: "Escolha um produto abaixo para visualizar, baixar ou excluir.",
+    buttonLabel: "Ver meus produtos",
+  };
+}
+
+function MetricCard({
+  helper,
+  icon,
+  label,
+  value,
+}: {
+  helper: string;
+  icon: "products" | "slots" | "format";
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-[24px] border border-white/8 bg-surface-2 p-5">
+    <div className="rounded-[22px] border border-white/8 bg-[rgba(20,20,20,.96)] p-7 transition hover:-translate-y-0.5 hover:border-[rgba(201,168,76,.28)] hover:shadow-[0_14px_34px_rgba(0,0,0,.20)] sm:p-8">
+      <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+        <MetricIcon icon={icon} />
+      </div>
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">{label}</p>
-      <p className="mt-3 truncate text-2xl font-semibold text-[#F7F5EF]">{value}</p>
+      <p className="mt-3 truncate text-3xl font-semibold text-[#F7F5EF]">{value}</p>
+      <p className="mt-2 text-sm leading-5 text-muted">{helper}</p>
     </div>
   );
+}
+
+function PlusIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2" />
+    </svg>
+  );
+}
+
+function BoxIcon() {
+  return (
+    <svg aria-hidden="true" className="h-7 w-7" fill="none" viewBox="0 0 24 24">
+      <path
+        d="m4.5 8 7.5-4 7.5 4-7.5 4-7.5-4Z"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path d="M4.5 8v8l7.5 4 7.5-4V8" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+      <path d="M12 12v8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function MetricIcon({ icon }: { icon: "products" | "slots" | "format" }) {
+  if (icon === "slots") {
+    return (
+      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+        <path d="M7 12h10M12 7v10" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+        <path
+          d="M5.5 4.5h13v15h-13v-15Z"
+          stroke="currentColor"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+      </svg>
+    );
+  }
+
+  if (icon === "format") {
+    return (
+      <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+        <path d="M7 7h10M7 12h7M7 17h4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+        <path
+          d="M5 3.8h14c.7 0 1.2.5 1.2 1.2v14c0 .7-.5 1.2-1.2 1.2H5c-.7 0-1.2-.5-1.2-1.2V5c0-.7.5-1.2 1.2-1.2Z"
+          stroke="currentColor"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+      </svg>
+    );
+  }
+
+  return <BoxIcon />;
 }
 
 function ResultScreen({
