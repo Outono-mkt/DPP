@@ -798,89 +798,96 @@ function AccessScreen({
       `}</style>
       <div className="relative z-10 grid min-h-screen w-full grid-cols-1 items-center gap-12 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,40fr)_minmax(420px,60fr)] md:gap-[6vw] md:px-[7vw] md:py-12">
         <div className="flex min-w-0 items-center">
-          <div className="max-w-[620px]">
-            <h1 className="max-w-[620px] text-[2.45rem] font-bold leading-[1.05] text-white sm:text-[2.85rem] md:text-[3.75rem] lg:text-[4.5rem]">
+          <div className="max-w-full lg:max-w-[580px] xl:max-w-[680px]">
+            <h1 className="max-w-full text-[2.5rem] font-bold leading-[1.08] tracking-normal text-white sm:text-[2.625rem] lg:max-w-[580px] lg:text-[2.875rem] lg:leading-[1.06] xl:max-w-[680px] xl:text-[3.375rem]">
               Transforme seu conhecimento
               <br />
-              em um
-              <br />
-              <span className="text-accent">produto digital.</span>
+              em um <span className="text-accent">produto digital.</span>
             </h1>
           </div>
         </div>
 
         <div className="flex w-full items-center justify-center md:justify-end">
           <form
-            className="w-full max-w-[520px] space-y-5 rounded-[30px] border border-white/30 p-6 text-[#1A1A1A] shadow-[0_30px_80px_rgba(0,0,0,.24)] backdrop-blur-[24px] sm:p-9 lg:p-[52px_48px]"
+            className="w-full max-w-[500px] rounded-[28px] border border-white/10 p-6 text-[#F7F5EF] shadow-[inset_0_1px_0_rgba(255,255,255,.06),0_30px_80px_rgba(0,0,0,.42)] backdrop-blur-[26px] sm:p-9 lg:p-[48px_44px]"
             onSubmit={(event) => {
               event.preventDefault();
               void onEnter(email, password);
             }}
             style={{
-              WebkitBackdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(26px)",
               animation: "login-card-in 520ms ease-out both",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)), rgba(248,246,242,.76)",
+              background: "linear-gradient(180deg, rgba(26,26,26,.78) 0%, rgba(14,14,14,.88) 100%)",
             }}
           >
-            <div className="mb-9 flex justify-center">
-              <BrandLogo height={58} width={240} variant="dark" />
+            <div className="mb-8 flex justify-center overflow-visible">
+              <div className="flex sm:hidden">
+                <BrandLogo height={64} width={210} variant="horizontal" />
+              </div>
+              <div className="hidden sm:flex lg:hidden">
+                <BrandLogo height={72} width={240} variant="horizontal" />
+              </div>
+              <div className="hidden lg:flex">
+                <BrandLogo height={84} width={280} variant="horizontal" />
+              </div>
             </div>
-            <h2 className="text-center text-3xl font-bold leading-tight text-[#171717] sm:text-4xl">
+            <h2 className="text-center text-[2.125rem] font-bold leading-[1.1] text-[#F7F5EF]">
               Acesse <span className="text-accent">sua conta</span>
             </h2>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[#1A1A1A]">E-mail</span>
-              <input
-                className="h-[58px] w-full rounded-2xl border border-white/35 bg-white/40 px-4 text-base text-[#1A1A1A] shadow-inner shadow-white/10 outline-none backdrop-blur-[10px] transition placeholder:text-[#7A746E] focus:border-[#C9A84C] focus:shadow-[0_0_0_3px_rgba(201,168,76,.15)]"
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="seuemail@exemplo.com"
-                type="email"
-                value={email}
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[#1A1A1A]">Senha</span>
-              <input
-                className="h-[58px] w-full rounded-2xl border border-white/35 bg-white/40 px-4 text-base text-[#1A1A1A] shadow-inner shadow-white/10 outline-none backdrop-blur-[10px] transition placeholder:text-[#7A746E] focus:border-[#C9A84C] focus:shadow-[0_0_0_3px_rgba(201,168,76,.15)]"
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Senha enviada por e-mail"
-                type="password"
-                value={password}
-              />
-            </label>
-
-            <div className="flex items-center justify-between gap-4 text-sm text-[#5C5751]">
-              <label className="flex min-w-0 items-center gap-2">
+            <div className="mt-[38px] space-y-5">
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-[#F7F5EF]">E-mail</span>
                 <input
-                  className="h-4 w-4 rounded border-white/40 bg-white/40 accent-[#C9A84C]"
-                  type="checkbox"
+                  className="h-[58px] w-full rounded-[14px] border border-white/10 bg-white/[.055] px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-[#9C9892] focus:border-[rgba(201,168,76,.75)] focus:shadow-[0_0_0_3px_rgba(201,168,76,.12)]"
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="seuemail@exemplo.com"
+                  type="email"
+                  value={email}
                 />
-                <span>Lembrar meu acesso</span>
               </label>
-              <button
-                className="shrink-0 text-[#A67F21] transition hover:text-[#7D5E16] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-white/30"
-                type="button"
-              >
-                Esqueci minha senha
-              </button>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-[#F7F5EF]">Senha</span>
+                <input
+                  className="h-[58px] w-full rounded-[14px] border border-white/10 bg-white/[.055] px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-[#9C9892] focus:border-[rgba(201,168,76,.75)] focus:shadow-[0_0_0_3px_rgba(201,168,76,.12)]"
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Senha enviada por e-mail"
+                  type="password"
+                  value={password}
+                />
+              </label>
+
+              <div className="flex items-center justify-between gap-4 text-sm text-[#B0ABA4]">
+                <label className="flex min-w-0 items-center gap-2">
+                  <input
+                    className="h-4 w-4 rounded border-white/20 bg-white/[.055] accent-[#C9A84C]"
+                    type="checkbox"
+                  />
+                  <span>Lembrar meu acesso</span>
+                </label>
+                <button
+                  className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-[#111111]"
+                  type="button"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+
+              {error ? (
+                <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
+                  {error}
+                </p>
+              ) : null}
             </div>
 
-            {error ? (
-              <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
-                {error}
-              </p>
-            ) : null}
-
             <button
-              className="h-[60px] w-full rounded-2xl bg-[linear-gradient(135deg,#E8CC73_0%,#C99A33_55%,#B57F17_100%)] px-5 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-[#C99A33]/10 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(201,154,51,.30)] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-white/30 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
+              className="mt-7 h-[58px] w-full rounded-[14px] bg-[linear-gradient(135deg,#E5CB78_0%,#C9A84C_58%,#B98C2D_100%)] px-5 text-sm font-bold text-[#0D0D0D] shadow-lg shadow-[#C99A33]/10 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(201,154,51,.30)] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-[#111111] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
               disabled={isSubmitting}
               type="submit"
             >
               {isSubmitting ? "Entrando..." : "Entrar"}
             </button>
-            <div className="flex flex-col items-center gap-2 pt-2 text-center text-sm font-medium text-[#5F5A53]">
+            <div className="mt-[34px] flex flex-col items-center gap-2 text-center text-sm font-medium text-[#A9A49D]">
               <svg aria-hidden="true" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24">
                 <path
                   d="M12 3.4 18.5 6v5.2c0 4.1-2.6 7.8-6.5 9.1-3.9-1.3-6.5-5-6.5-9.1V6L12 3.4Z"
