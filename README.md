@@ -48,6 +48,8 @@ Variaveis previstas:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `HOTMART_WEBHOOK_SECRET`
+- `HOTMART_PRODUCT_ID`
+- `NEXT_PUBLIC_SITE_URL`
 
 
 ## Arquitetura de IA
@@ -111,8 +113,38 @@ Variaveis reservadas para etapas futuras:
 
 ```txt
 HOTMART_WEBHOOK_SECRET=
+HOTMART_PRODUCT_ID=8106727
+NEXT_PUBLIC_SITE_URL=https://dpp-ivory.vercel.app
 OPENAI_API_KEY=
 ```
+
+## Hotmart -> Supabase
+
+Endpoint preparado nesta etapa:
+
+```txt
+POST /api/webhooks/hotmart
+URL de producao: https://dpp-ivory.vercel.app/api/webhooks/hotmart
+```
+
+Antes de ativar o webhook na Hotmart:
+
+1. Execute no Supabase o SQL em `supabase/hotmart_integration.sql`.
+2. Configure `HOTMART_WEBHOOK_SECRET` no ambiente local e na Vercel.
+3. Configure `HOTMART_PRODUCT_ID=8106727`.
+4. Configure `NEXT_PUBLIC_SITE_URL=https://dpp-ivory.vercel.app`.
+
+A rota valida o header `X-HOTMART-HOTTOK`, aceita apenas o produto `8106727` e processa `PURCHASE_APPROVED`.
+
+Eventos `PURCHASE_REFUNDED`, `PURCHASE_CHARGEBACK` e `PURCHASE_CANCELED` ainda retornam como ignorados e ficam para a proxima etapa.
+
+O link de primeiro acesso ja e gerado no backend com Supabase Admin, apontando para:
+
+```txt
+https://dpp-ivory.vercel.app/auth/set-password
+```
+
+O envio real de e-mail ainda nao foi integrado.
 
 ### Configuracao na Vercel
 

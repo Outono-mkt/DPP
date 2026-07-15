@@ -46,6 +46,54 @@ type Database = {
         }>;
         Relationships: [];
       };
+      customer_access: {
+        Row: {
+          id: string;
+          user_id: string;
+          email: string;
+          buyer_name: string | null;
+          provider: string;
+          product_id: string;
+          offer_code: string | null;
+          transaction_id: string;
+          access_status: "active" | "refunded" | "chargeback" | "canceled" | "blocked";
+          must_change_password: boolean;
+          purchased_at: string | null;
+          revoked_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          email: string;
+          buyer_name?: string | null;
+          provider?: string;
+          product_id: string;
+          offer_code?: string | null;
+          transaction_id: string;
+          access_status?: "active" | "refunded" | "chargeback" | "canceled" | "blocked";
+          must_change_password?: boolean;
+          purchased_at?: string | null;
+          revoked_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          email: string;
+          buyer_name: string | null;
+          provider: string;
+          product_id: string;
+          offer_code: string | null;
+          transaction_id: string;
+          access_status: "active" | "refunded" | "chargeback" | "canceled" | "blocked";
+          must_change_password: boolean;
+          purchased_at: string | null;
+          revoked_at: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
