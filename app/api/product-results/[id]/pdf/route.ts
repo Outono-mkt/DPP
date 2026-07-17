@@ -6,6 +6,8 @@ import {
   getUserProductResult,
 } from "@/lib/supabase/product-results";
 
+export const runtime = "nodejs";
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -36,6 +38,7 @@ export async function GET(
         { status: 404 },
       );
     }
+    const filename = getPdfFilename(result.generated_result);
 
     stage = "render_pdf";
     const pdf = await generateProductResultPdf({
@@ -47,30 +50,38 @@ export async function GET(
     });
 
     stage = "buffer";
-    if (pdf.byteLength === 0) {
+    const buffer = Buffer.from(pdf);
+
+    if (buffer.byteLength === 0 || buffer.subarray(0, 5).toString("ascii") !== "%PDF-") {
       throw new ProductResultPdfError("PDF buffer is empty.", stage, "renderToBuffer");
     }
 
-    return new Response(Buffer.from(pdf), {
+    return new Response(buffer, {
+      status: 200,
       headers: {
-        "Content-Disposition": `attachment; filename="produto-pronto-${id}.pdf"`,
+        "Cache-Control": "private, no-store, max-age=0",
+        "Content-Disposition": 'attachment; filename="' + filename + '"',
+        "Content-Length": String(buffer.byteLength),
         "Content-Type": "application/pdf",
       },
     });
   } catch (error) {
-    logPdfRouteError({
-      error,
-      productId,
-      stage: error instanceof ProductResultPdfError ? error.stage : stage,
-    });
+    const errorStage = error instanceof ProductResultPdfError ? error.stage : stage;
+    const status = errorStage === "auth" ? 401 : 500;
+
+    if (status === 500) {
+      logPdfRouteError({ error, productId, stage: errorStage });
+    }
 
     return NextResponse.json(
       {
-        error: getPdfRouteErrorMessage(error),
-        code: "PDF_GENERATION_FAILED",
-        stage: error instanceof ProductResultPdfError ? error.stage : stage,
+        error:
+          status === 401
+            ? "Sua sessao expirou. Entre novamente para baixar o PDF."
+            : getPdfRouteErrorMessage(error),
+        code: status === 401 ? "UNAUTHORIZED" : "PDF_GENERATION_FAILED",
       },
-      { status: 500 },
+      { status, headers: { "Cache-Control": "no-store" } },
     );
   }
 }
@@ -109,4 +120,25 @@ function logPdfRouteError({
     stack,
     stage,
   });
+}
+
+function getPdfFilename(result: {
+  ideia?: unknown;
+  nomes?: unknown;
+}) {
+  const names = Array.isArray(result.nomes) ? result.nomes : [];
+  const preferredName =
+    names.find((name): name is string => typeof name === "string" && name.trim().length > 0) ??
+    (typeof result.ideia === "string" ? result.ideia : "");
+  const safeName = preferredName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+    .replace(/[^a-zA-Z0-9 -]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 72);
+
+  return safeName ? "produto-pronto-" + safeName.toLowerCase() + ".pdf" : "produto-pronto.pdf";
 }

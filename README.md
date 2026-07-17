@@ -121,7 +121,21 @@ OPENAI_API_KEY=
 
 ## Cadastro do Produto Pronto
 
-O MVP usa Supabase Auth diretamente. O usuario cria a conta em `/auth/register` com o Codigo do Desafio, faz login automaticamente e recebe o limite padrao de 2 produtos.
+O MVP usa Supabase Auth diretamente. Na tela principal, o usuario abre o modal de primeiro acesso, informa o Codigo do Desafio, faz login automaticamente e recebe o limite padrao de 2 produtos.
+
+Os fluxos de cadastro, recuperacao e nova senha usam modais sobre a mesma identidade visual do login. As rotas `/auth/register` e `/auth/set-password` permanecem como entradas tecnicas de compatibilidade e renderizam a mesma experiencia.
+
+Configure em Supabase -> Authentication -> URL Configuration:
+
+```txt
+Site URL: https://dpp-ivory.vercel.app
+Redirect URLs:
+http://localhost:3000/**
+https://dpp-ivory.vercel.app/**
+https://*-<seu-time>.vercel.app/**
+```
+
+Se os previews da Vercel nao seguirem esse padrao, adicione as URLs de preview utilizadas explicitamente.
 
 Configure um valor privado e dificil de adivinhar:
 

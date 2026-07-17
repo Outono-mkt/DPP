@@ -1,9 +1,9 @@
-﻿"use client";
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 
+import { AuthModal, type AuthModalKind } from "@/components/AuthModal";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type {
@@ -91,7 +91,12 @@ const loadingPhrases = [
   "Montando seu produto",
 ];
 
-export function ProductProntoFlow() {
+export function ProductProntoFlow({
+  initialAuthModal = null,
+}: {
+  initialAuthModal?: AuthModalKind | null;
+}) {
+  const [authModal, setAuthModal] = useState<AuthModalKind | null>(initialAuthModal);
   const [step, setStep] = useState<Step>("access");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<OnboardingAnswers>(initialAnswers);
@@ -112,10 +117,8 @@ export function ProductProntoFlow() {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isSendingRecovery, setIsSendingRecovery] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("Criador");
 
@@ -137,7 +140,7 @@ export function ProductProntoFlow() {
   const resetFlowToAccess = useCallback(() => {
     resetCreationFlow();
     setLoginError(null);
-    setRecoveryMessage(null);
+    setAuthModal(null);
     setUserEmail(null);
     setUserName("Criador");
     setSavedProducts([]);
@@ -154,12 +157,22 @@ export function ProductProntoFlow() {
         const { data } = await supabase.auth.getSession();
 
         if (!active) return;
+        const recoveryRequested =
+          initialAuthModal === "new-password" || hasRecoveryUrlMarker();
 
         const email = data.session?.user.email ?? null;
         setUserEmail(email);
         setUserName(getUserDisplayName(data.session?.user));
         setStep(email ? "dashboard" : "access");
         setIsCheckingSession(false);
+        if (recoveryRequested) {
+          setAuthModal("new-password");
+        } else if (email && initialAuthModal === "register") {
+          setAuthModal(null);
+          if (window.location.pathname === "/auth/register") {
+            window.history.replaceState({}, "", "/");
+          }
+        }
 
         if (email) {
           void refreshSavedProducts();
@@ -175,12 +188,16 @@ export function ProductProntoFlow() {
 
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
         const email = session?.user.email ?? null;
         setUserEmail(email);
         setUserName(getUserDisplayName(session?.user));
 
-        if (!email) resetFlowToAccess();
+        if (event === "PASSWORD_RECOVERY") {
+          setAuthModal("new-password");
+        } else if (!email && event === "SIGNED_OUT") {
+          resetFlowToAccess();
+        }
       });
 
       void checkSession();
@@ -192,7 +209,7 @@ export function ProductProntoFlow() {
     } catch {
       void checkSession();
     }
-  }, [resetFlowToAccess]);
+  }, [initialAuthModal, resetFlowToAccess]);
 
   useEffect(() => {
     if (step !== "loading") return;
@@ -220,7 +237,6 @@ export function ProductProntoFlow() {
   async function enterExperience(email: string, password: string) {
     setIsLoggingIn(true);
     setLoginError(null);
-    setRecoveryMessage(null);
 
     try {
       const supabase = getSupabaseBrowserClient();
@@ -235,6 +251,8 @@ export function ProductProntoFlow() {
       }
 
       setUserEmail(data.session.user.email);
+      setUserName(getUserDisplayName(data.session.user));
+      closeAuthModal();
       void refreshSavedProducts();
       setStep("dashboard");
     } catch {
@@ -244,37 +262,25 @@ export function ProductProntoFlow() {
     }
   }
 
-  async function requestPasswordRecovery(email: string) {
+  function openAuthModal(kind: AuthModalKind) {
     setLoginError(null);
-    setRecoveryMessage(null);
+    setAuthModal(kind);
+  }
 
-    const normalizedEmail = email.trim().toLowerCase();
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setLoginError("Informe seu e-mail para recuperar a senha.");
-      return;
+  function closeAuthModal() {
+    setAuthModal(null);
+    if (window.location.pathname.startsWith("/auth/")) {
+      window.history.replaceState({}, "", "/");
     }
+  }
 
-    setIsSendingRecovery(true);
-
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: `${window.location.origin}/auth/set-password`,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      setRecoveryMessage(
-        "Se houver uma conta com este e-mail, voc\u00ea receber\u00e1 as instru\u00e7\u00f5es para criar uma nova senha.",
-      );
-    } catch {
-      setLoginError("N\u00e3o foi poss\u00edvel enviar a recupera\u00e7\u00e3o agora. Tente novamente em instantes.");
-    } finally {
-      setIsSendingRecovery(false);
-    }
+  function completeAuthentication(email: string, displayName?: string) {
+    setUserEmail(email);
+    setUserName(displayName?.trim() || email.split("@")[0] || "Criador");
+    setAuthModal(null);
+    setStep("dashboard");
+    window.history.replaceState({}, "", "/");
+    void refreshSavedProducts();
   }
 
   function goBack() {
@@ -434,7 +440,7 @@ export function ProductProntoFlow() {
     try {
       await requestProductPdf(productId);
     } catch (error) {
-      setPersistenceMessage(getErrorMessage(error, "Nao foi possivel gerar o PDF agora."));
+      setPersistenceMessage(getErrorMessage(error, pdfDownloadFallbackMessage()));
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -471,7 +477,7 @@ export function ProductProntoFlow() {
     try {
       await requestProductPdf(activeResultId);
     } catch (error) {
-      setPersistenceMessage(getErrorMessage(error, "Nao foi possivel gerar o PDF agora."));
+      setPersistenceMessage(getErrorMessage(error, pdfDownloadFallbackMessage()));
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -513,11 +519,12 @@ export function ProductProntoFlow() {
   }
 
   const isAuthenticated = Boolean(userEmail);
+  const showAuthentication = !isAuthenticated || authModal === "new-password";
 
   return (
     <main
       className={`min-h-screen bg-background text-foreground ${
-        isAuthenticated ? "px-4 py-6 sm:px-6 lg:px-8" : ""
+        isAuthenticated && !showAuthentication ? "px-4 py-6 sm:px-6 lg:px-8" : ""
       }`}
     >
       <div
@@ -525,7 +532,7 @@ export function ProductProntoFlow() {
           isAuthenticated ? "min-h-[calc(100vh-3rem)] max-w-[1240px]" : "min-h-screen max-w-none"
         }`}
       >
-        {isAuthenticated ? (
+        {isAuthenticated && !showAuthentication ? (
           <AppTopBar
             createdCount={savedProducts.length}
             onSignOut={signOut}
@@ -533,17 +540,18 @@ export function ProductProntoFlow() {
           />
         ) : null}
 
-        {!isAuthenticated && (
+        {showAuthentication && (
           <AccessScreen
+            authModal={authModal}
             error={loginError}
-            isSendingRecovery={isSendingRecovery}
             isSubmitting={isLoggingIn}
+            onAuthenticated={completeAuthentication}
+            onCloseModal={closeAuthModal}
             onEnter={enterExperience}
-            onRecoverPassword={requestPasswordRecovery}
-            recoveryMessage={recoveryMessage}
+            onOpenModal={openAuthModal}
           />
         )}
-        {isAuthenticated && step === "dashboard" && (
+        {isAuthenticated && !showAuthentication && step === "dashboard" && (
           <ProductsDashboard
             error={historyError}
             deletingProductId={deletingProductId}
@@ -556,7 +564,7 @@ export function ProductProntoFlow() {
             products={savedProducts}
           />
         )}
-        {isAuthenticated && step === "creation" && (
+        {isAuthenticated && !showAuthentication && step === "creation" && (
           <OnboardingScreen
             answers={answers}
             currentQuestion={currentQuestion}
@@ -573,10 +581,10 @@ export function ProductProntoFlow() {
             regeneratingStage={regeneratingStage}
           />
         )}
-        {isAuthenticated && step === "loading" && (
+        {isAuthenticated && !showAuthentication && step === "loading" && (
           <LoadingScreen mode={loadingMode} phrase={loadingPhrases[loadingIndex]} />
         )}
-        {isAuthenticated && (step === "result" || step === "savedResult") && (
+        {isAuthenticated && !showAuthentication && (step === "result" || step === "savedResult") && (
           <ResultScreen
             activeResultId={activeResultId}
             copiedBlock={copiedBlock}
@@ -706,7 +714,7 @@ async function requestSaveProduct(
 }
 
 async function requestProductPdf(resultId: string) {
-  const response = await fetch(`/api/product-results/${resultId}/pdf`, {
+  const response = await fetch("/api/product-results/" + resultId + "/pdf", {
     headers: await getAuthHeaders(),
   });
 
@@ -720,15 +728,29 @@ async function requestProductPdf(resultId: string) {
     throw new Error(await readPdfErrorMessage(response));
   }
 
-  const blob = await response.blob();
+  const contentDisposition = response.headers.get("Content-Disposition") ?? "";
+  const arrayBuffer = await response.arrayBuffer();
+
+  if (arrayBuffer.byteLength === 0) {
+    throw new Error(pdfDownloadFallbackMessage());
+  }
+
+  const signature = new TextDecoder("ascii").decode(arrayBuffer.slice(0, 5));
+
+  if (signature !== "%PDF-") {
+    throw new Error(pdfDownloadFallbackMessage());
+  }
+
+  const blob = new Blob([arrayBuffer], { type: "application/pdf" });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `produto-pronto-${resultId}.pdf`;
+  link.download = getPdfDownloadFilename(contentDisposition, resultId);
+  link.style.display = "none";
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(url);
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 1500);
 }
 
 async function readPdfErrorMessage(response: Response) {
@@ -742,9 +764,41 @@ async function readPdfErrorMessage(response: Response) {
     // Keep the user-facing fallback when the response is not JSON.
   }
 
-  return "Nao foi possivel gerar o PDF agora.";
+  return pdfDownloadFallbackMessage();
 }
 
+function getPdfDownloadFilename(contentDisposition: string, resultId: string) {
+  const match = /filename="?([^";]+)"?/i.exec(contentDisposition);
+  const candidate = match?.[1]?.trim() || "produto-pronto-" + resultId + ".pdf";
+  const safeName = candidate
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  if (!safeName) return "produto-pronto.pdf";
+  return safeName.toLowerCase().endsWith(".pdf") ? safeName : safeName + ".pdf";
+}
+
+function pdfDownloadFallbackMessage() {
+  return (
+    "Nao foi possivel gerar o PDF. " +
+    "Tente novamente. Se o problema continuar, atualize a pagina."
+  );
+}
+function hasRecoveryUrlMarker() {
+  if (typeof window === "undefined") return false;
+  const search = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+
+  return (
+    search.get("auth") === "recovery" ||
+    search.get("type") === "recovery" ||
+    hash.get("type") === "recovery" ||
+    search.has("error") ||
+    hash.has("error")
+  );
+}
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message.trim().length > 0 ? error.message : fallback;
 }
@@ -884,22 +938,25 @@ function mergeDiscoveryStage(
 }
 
 function AccessScreen({
+  authModal,
   error,
-  isSendingRecovery,
   isSubmitting,
+  onAuthenticated,
+  onCloseModal,
   onEnter,
-  onRecoverPassword,
-  recoveryMessage,
+  onOpenModal,
 }: {
+  authModal: AuthModalKind | null;
   error: string | null;
-  isSendingRecovery: boolean;
   isSubmitting: boolean;
+  onAuthenticated: (email: string, displayName?: string) => void;
+  onCloseModal: () => void;
   onEnter: (email: string, password: string) => Promise<void>;
-  onRecoverPassword: (email: string) => Promise<void>;
-  recoveryMessage: string | null;
+  onOpenModal: (kind: AuthModalKind) => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
 
   return (
     <section
@@ -922,7 +979,7 @@ function AccessScreen({
           }
         }
       `}</style>
-      <div className="relative z-10 grid min-h-screen w-full grid-cols-1 items-center gap-12 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,40fr)_minmax(420px,60fr)] md:gap-[6vw] md:px-[7vw] md:py-12">
+      <div aria-hidden={authModal ? true : undefined} className="relative z-10 grid min-h-screen w-full grid-cols-1 items-center gap-12 px-5 py-10 sm:px-8 md:grid-cols-[minmax(0,40fr)_minmax(420px,60fr)] md:gap-[6vw] md:px-[7vw] md:py-12" inert={authModal ? true : undefined}>
         <div className="flex min-w-0 items-center">
           <div className="max-w-full lg:max-w-[580px] xl:max-w-[680px]">
             <h1 className="max-w-full text-[2.5rem] font-bold leading-[1.08] tracking-normal text-white sm:text-[2.625rem] lg:max-w-[580px] lg:text-[2.875rem] lg:leading-[1.06] xl:max-w-[680px] xl:text-[3.375rem]">
@@ -967,6 +1024,7 @@ function AccessScreen({
                   className="h-[58px] w-full rounded-[14px] border border-white/10 bg-white/[.055] px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-[#9C9892] focus:border-[rgba(201,168,76,.75)] focus:shadow-[0_0_0_3px_rgba(201,168,76,.12)]"
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="seuemail@exemplo.com"
+                  ref={emailRef}
                   type="email"
                   value={email}
                 />
@@ -993,11 +1051,10 @@ function AccessScreen({
                 </label>
                 <button
                   className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-[#111111] disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isSendingRecovery}
-                  onClick={() => void onRecoverPassword(email)}
+                  onClick={() => onOpenModal("recover")}
                   type="button"
                 >
-                  {isSendingRecovery ? "Enviando..." : "Esqueceu sua senha?"}
+                  Esqueceu sua senha?
                 </button>
               </div>
 
@@ -1007,11 +1064,6 @@ function AccessScreen({
                 </p>
               ) : null}
 
-              {recoveryMessage ? (
-                <p className="rounded-2xl border border-[#C9A84C]/25 bg-[#C9A84C]/10 px-4 py-3 text-sm leading-5 text-[#E5CB78]">
-                  {recoveryMessage}
-                </p>
-              ) : null}
             </div>
 
             <button
@@ -1027,12 +1079,13 @@ function AccessScreen({
               <p className="mt-2 text-sm leading-6 text-[#A9A49D]">
                 Crie sua conta para acessar o Produto Pronto.
               </p>
-              <Link
+              <button
                 className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[14px] border border-[#C9A84C]/55 px-5 text-sm font-bold text-[#E5CB78] transition hover:border-[#E5CB78] hover:bg-[#C9A84C]/10 focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-[#111111]"
-                href="/auth/register"
+                onClick={() => onOpenModal("register")}
+                type="button"
               >
                 Criar minha conta
-              </Link>
+              </button>
             </div>
             <div className="mt-[34px] flex flex-col items-center gap-2 text-center text-sm font-medium text-[#A9A49D]">
               <svg aria-hidden="true" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24">
@@ -1054,7 +1107,20 @@ function AccessScreen({
           </form>
         </div>
       </div>
-    </section>
+      {authModal ? (
+        <AuthModal
+          initialEmail={email}
+          key={authModal}
+          kind={authModal}
+          onAuthenticated={onAuthenticated}
+          onClose={onCloseModal}
+          onReturnToLogin={() => {
+            onCloseModal();
+            window.requestAnimationFrame(() => emailRef.current?.focus());
+          }}
+          onSwitch={onOpenModal}
+        />
+      ) : null}    </section>
   );
 }
 
