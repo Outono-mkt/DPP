@@ -105,6 +105,7 @@ Variaveis obrigatorias agora:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+DPP_REGISTRATION_ACCESS_CODE=
 GEMINI_API_KEY=
 AI_PROVIDER=gemini
 ```
@@ -117,6 +118,20 @@ HOTMART_PRODUCT_ID=8106727
 NEXT_PUBLIC_SITE_URL=https://dpp-ivory.vercel.app
 OPENAI_API_KEY=
 ```
+
+## Cadastro do Produto Pronto
+
+O MVP usa Supabase Auth diretamente. O usuario cria a conta em `/auth/register` com o Codigo do Desafio, faz login automaticamente e recebe o limite padrao de 2 produtos.
+
+Configure um valor privado e dificil de adivinhar:
+
+```txt
+DPP_REGISTRATION_ACCESS_CODE=DPP2026
+```
+
+Essa variavel existe apenas no servidor. Nao use o prefixo `NEXT_PUBLIC_`.
+
+A integracao Hotmart abaixo permanece no projeto, mas nao participa da autenticacao deste MVP.
 
 ## Hotmart -> Supabase
 
@@ -160,6 +175,7 @@ Variaveis que precisam existir na Vercel:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
+DPP_REGISTRATION_ACCESS_CODE
 GEMINI_API_KEY
 AI_PROVIDER
 HOTMART_WEBHOOK_SECRET
@@ -172,6 +188,7 @@ Obrigatorias para o funcionamento atual:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
+DPP_REGISTRATION_ACCESS_CODE
 GEMINI_API_KEY
 AI_PROVIDER
 ```

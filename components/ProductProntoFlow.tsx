@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -111,8 +112,10 @@ export function ProductProntoFlow() {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSendingRecovery, setIsSendingRecovery] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("Criador");
 
@@ -134,6 +137,7 @@ export function ProductProntoFlow() {
   const resetFlowToAccess = useCallback(() => {
     resetCreationFlow();
     setLoginError(null);
+    setRecoveryMessage(null);
     setUserEmail(null);
     setUserName("Criador");
     setSavedProducts([]);
@@ -216,13 +220,17 @@ export function ProductProntoFlow() {
   async function enterExperience(email: string, password: string) {
     setIsLoggingIn(true);
     setLoginError(null);
+    setRecoveryMessage(null);
 
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
       if (error || !data.session?.user.email) {
-        setLoginError("Nao encontramos esse acesso. Confira o e-mail e a senha enviados apos a compra.");
+        setLoginError("N\u00e3o foi poss\u00edvel entrar. Confira seu e-mail e sua senha.");
         return;
       }
 
@@ -230,9 +238,42 @@ export function ProductProntoFlow() {
       void refreshSavedProducts();
       setStep("dashboard");
     } catch {
-      setLoginError("Nao encontramos esse acesso. Confira o e-mail e a senha enviados apos a compra.");
+      setLoginError("N\u00e3o foi poss\u00edvel entrar. Confira seu e-mail e sua senha.");
     } finally {
       setIsLoggingIn(false);
+    }
+  }
+
+  async function requestPasswordRecovery(email: string) {
+    setLoginError(null);
+    setRecoveryMessage(null);
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setLoginError("Informe seu e-mail para recuperar a senha.");
+      return;
+    }
+
+    setIsSendingRecovery(true);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: `${window.location.origin}/auth/set-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setRecoveryMessage(
+        "Se houver uma conta com este e-mail, voc\u00ea receber\u00e1 as instru\u00e7\u00f5es para criar uma nova senha.",
+      );
+    } catch {
+      setLoginError("N\u00e3o foi poss\u00edvel enviar a recupera\u00e7\u00e3o agora. Tente novamente em instantes.");
+    } finally {
+      setIsSendingRecovery(false);
     }
   }
 
@@ -493,7 +534,14 @@ export function ProductProntoFlow() {
         ) : null}
 
         {!isAuthenticated && (
-          <AccessScreen error={loginError} isSubmitting={isLoggingIn} onEnter={enterExperience} />
+          <AccessScreen
+            error={loginError}
+            isSendingRecovery={isSendingRecovery}
+            isSubmitting={isLoggingIn}
+            onEnter={enterExperience}
+            onRecoverPassword={requestPasswordRecovery}
+            recoveryMessage={recoveryMessage}
+          />
         )}
         {isAuthenticated && step === "dashboard" && (
           <ProductsDashboard
@@ -837,12 +885,18 @@ function mergeDiscoveryStage(
 
 function AccessScreen({
   error,
+  isSendingRecovery,
   isSubmitting,
   onEnter,
+  onRecoverPassword,
+  recoveryMessage,
 }: {
   error: string | null;
+  isSendingRecovery: boolean;
   isSubmitting: boolean;
   onEnter: (email: string, password: string) => Promise<void>;
+  onRecoverPassword: (email: string) => Promise<void>;
+  recoveryMessage: string | null;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -923,7 +977,7 @@ function AccessScreen({
                 <input
                   className="h-[58px] w-full rounded-[14px] border border-white/10 bg-white/[.055] px-4 text-base text-[#F7F5EF] outline-none transition placeholder:text-[#9C9892] focus:border-[rgba(201,168,76,.75)] focus:shadow-[0_0_0_3px_rgba(201,168,76,.12)]"
                   onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Senha enviada por e-mail"
+                  placeholder="Digite sua senha"
                   type="password"
                   value={password}
                 />
@@ -938,16 +992,24 @@ function AccessScreen({
                   <span>Lembrar meu acesso</span>
                 </label>
                 <button
-                  className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-[#111111]"
+                  className="shrink-0 text-[#C9A84C] transition hover:text-[#E5CB78] focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-[#111111] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isSendingRecovery}
+                  onClick={() => void onRecoverPassword(email)}
                   type="button"
                 >
-                  Esqueci minha senha
+                  {isSendingRecovery ? "Enviando..." : "Esqueceu sua senha?"}
                 </button>
               </div>
 
               {error ? (
                 <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-100">
                   {error}
+                </p>
+              ) : null}
+
+              {recoveryMessage ? (
+                <p className="rounded-2xl border border-[#C9A84C]/25 bg-[#C9A84C]/10 px-4 py-3 text-sm leading-5 text-[#E5CB78]">
+                  {recoveryMessage}
                 </p>
               ) : null}
             </div>
@@ -959,6 +1021,19 @@ function AccessScreen({
             >
               {isSubmitting ? "Entrando..." : "Entrar"}
             </button>
+
+            <div className="mt-7 border-t border-white/10 pt-6 text-center">
+              <p className="text-sm font-semibold text-[#F7F5EF]">Primeiro acesso?</p>
+              <p className="mt-2 text-sm leading-6 text-[#A9A49D]">
+                Crie sua conta para acessar o Produto Pronto.
+              </p>
+              <Link
+                className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[14px] border border-[#C9A84C]/55 px-5 text-sm font-bold text-[#E5CB78] transition hover:border-[#E5CB78] hover:bg-[#C9A84C]/10 focus:outline-none focus:ring-2 focus:ring-[#C9A84C] focus:ring-offset-2 focus:ring-offset-[#111111]"
+                href="/auth/register"
+              >
+                Criar minha conta
+              </Link>
+            </div>
             <div className="mt-[34px] flex flex-col items-center gap-2 text-center text-sm font-medium text-[#A9A49D]">
               <svg aria-hidden="true" className="h-5 w-5 text-accent" fill="none" viewBox="0 0 24 24">
                 <path
