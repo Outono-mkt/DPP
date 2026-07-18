@@ -5,6 +5,7 @@ import {
   getAuthenticatedUser,
   getUserProductResult,
 } from "@/lib/supabase/product-results";
+import { WHATSAPP_URL } from "@/lib/whatsapp";
 
 export const runtime = "nodejs";
 
@@ -46,7 +47,7 @@ export async function GET(
       result: result.generated_result,
       selectedFormat: result.selected_format,
       userDisplayName: user.email,
-      whatsappUrl: process.env.NEXT_PUBLIC_WHATSAPP_URL,
+      whatsappUrl: WHATSAPP_URL,
     });
 
     stage = "buffer";

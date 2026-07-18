@@ -67,12 +67,12 @@ function RegistrationDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, email: normalizedEmail, name: form.name.trim() }),
       });
-      const payload = (await response.json()) as { error?: string; ok?: boolean };
+      const payload = await readRegistrationResponse(response);
 
       if (!response.ok || !payload.ok) {
         setError({
           field: response.status === 401 ? "challengeCode" : response.status === 409 ? "email" : "form",
-          message: payload.error ?? "Não foi possível criar sua conta agora.",
+          message: payload.error ?? unexpectedRegistrationMessage(),
         });
         return;
       }
@@ -99,7 +99,7 @@ function RegistrationDialog({
     } catch {
       setError({
         field: "form",
-        message: "Não foi possível criar sua conta agora. Tente novamente em instantes.",
+        message: unexpectedRegistrationMessage(),
       });
     } finally {
       setBusy(false);
@@ -555,6 +555,24 @@ function validateRegistration(form: {
     return { field: "passwordConfirmation", message: "As senhas n\u00e3o conferem." };
   }
   return null;
+}
+
+async function readRegistrationResponse(response: Response): Promise<{ error?: string; ok?: boolean }> {
+  try {
+    const payload = (await response.json()) as unknown;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};
+    const record = payload as Record<string, unknown>;
+    return {
+      error: typeof record.error === "string" ? record.error : undefined,
+      ok: record.ok === true,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function unexpectedRegistrationMessage() {
+  return "Não foi possível criar sua conta. Tente novamente. Se o problema continuar, entre em contato com o suporte.";
 }
 
 function fieldErrorId(error: FieldError | null, field: RegistrationField, id: string) {

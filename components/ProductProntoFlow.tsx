@@ -6,6 +6,7 @@ import Image from "next/image";
 import { AuthModal, type AuthModalKind } from "@/components/AuthModal";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { WHATSAPP_URL } from "@/lib/whatsapp";
 import type {
   DiscoveryInput,
   DiscoveryResult,
@@ -2209,22 +2210,14 @@ function ResultScreen({
                   )}
 
                   {block.action ? (
-                    <button
-                      className="mt-6 h-12 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
-                      onClick={() => {
-                        const whatsappUrl = process.env.NEXT_PUBLIC_WHATSAPP_URL;
-
-                        if (whatsappUrl) {
-                          window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-                          return;
-                        }
-
-                        window.alert(block.action?.fallbackMessage);
-                      }}
-                      type="button"
+                    <a
+                      className="mt-6 flex h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 text-center text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
+                      href={WHATSAPP_URL}
+                      rel="noopener noreferrer"
+                      target="_blank"
                     >
                       {block.action.label}
-                    </button>
+                    </a>
                   ) : null}
                 </article>
               ))}

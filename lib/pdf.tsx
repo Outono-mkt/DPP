@@ -1,7 +1,10 @@
 import "server-only";
 
+import { existsSync } from "fs";
+import path from "path";
 import {
   Document,
+  Image,
   Link,
   Page,
   StyleSheet,
@@ -51,6 +54,8 @@ const COLORS = {
   white: "#ffffff",
 };
 
+const PDF_LOGO_PATH = path.join(process.cwd(), "public", "brand", "logo-produto-pronto-pdf.png");
+
 export async function generateProductResultPdf(input: PdfInput): Promise<Uint8Array> {
   let safeResult: ProductResult;
 
@@ -87,6 +92,7 @@ function ProductResultDocument({
   const format = selectedFormat?.trim() || "Formato definido pela estratégia";
   const principalName = getFirstText(result.nomes, result.ideia || "Produto Pronto");
   const sections = getStrategicSections(result, format);
+  const logoSrc = getPdfLogoSrc();
 
   return (
     <Document
@@ -99,7 +105,11 @@ function ProductResultDocument({
     >
       <Page size="A4" style={[styles.coverPage, styles.darkPage]}>
         <View style={styles.coverTop}>
-          <Text style={styles.coverBrand}>Produto Pronto</Text>
+          {logoSrc ? (
+            <CoverLogo src={logoSrc} />
+          ) : (
+            <Text style={styles.coverBrand}>Produto Pronto</Text>
+          )}
           <View style={styles.coverRule} />
         </View>
 
@@ -182,6 +192,11 @@ function ProductResultDocument({
       </Page>
     </Document>
   );
+}
+
+function CoverLogo({ src }: { src: string }) {
+  // eslint-disable-next-line jsx-a11y/alt-text
+  return <Image src={src} style={styles.coverLogo} />;
 }
 
 function StrategicSectionBlock({
@@ -863,6 +878,10 @@ function validateProductResultForPdf(result: ProductResult) {
   }
 }
 
+function getPdfLogoSrc() {
+  return existsSync(PDF_LOGO_PATH) ? PDF_LOGO_PATH : null;
+}
+
 const styles = StyleSheet.create({
   darkPage: {
     backgroundColor: COLORS.black,
@@ -881,6 +900,11 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     fontSize: 18,
     letterSpacing: 0,
+  },
+  coverLogo: {
+    height: 30,
+    objectFit: "contain",
+    width: 176,
   },
   coverRule: {
     backgroundColor: COLORS.gold,

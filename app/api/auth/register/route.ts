@@ -6,6 +6,8 @@ import {
   RegistrationEmailExistsError,
 } from "@/lib/access/registration";
 
+export const runtime = "nodejs";
+
 const MAX_BODY_SIZE = 8_192;
 const MAX_FAILED_CODE_ATTEMPTS = 5;
 const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
@@ -46,14 +48,19 @@ export async function POST(request: Request) {
     return response({ ok: false, error: validation.error }, 400);
   }
 
-  const configuredCode = process.env.DPP_REGISTRATION_ACCESS_CODE;
+  const missingConfig = getMissingRegistrationConfig();
 
-  if (!configuredCode) {
+  if (missingConfig.length > 0) {
+    logRegistrationRouteError("missing_config", {
+      missing: missingConfig,
+    });
     return response(
       { ok: false, error: "O cadastro est\u00e1 temporariamente indispon\u00edvel." },
       503,
     );
   }
+
+  const configuredCode = process.env.DPP_REGISTRATION_ACCESS_CODE?.trim() ?? "";
 
   if (!codesMatch(validation.data.challengeCode, configuredCode)) {
     registerFailedCodeAttempt(clientKey);
@@ -89,8 +96,22 @@ export async function POST(request: Request) {
       );
     }
 
+    if (isRegistrationConfigurationError(error)) {
+      logRegistrationRouteError("registration_dependency", sanitizeRegistrationError(error));
+      return response(
+        { ok: false, error: "O cadastro est\u00e1 temporariamente indispon\u00edvel." },
+        503,
+      );
+    }
+
+    logRegistrationRouteError("unexpected", sanitizeRegistrationError(error));
+
     return response(
-      { ok: false, error: "N\u00e3o foi poss\u00edvel criar sua conta agora. Tente novamente em instantes." },
+      {
+        ok: false,
+        error:
+          "N\u00e3o foi poss\u00edvel criar sua conta. Tente novamente. Se o problema continuar, entre em contato com o suporte.",
+      },
       500,
     );
   }
@@ -176,6 +197,53 @@ function registerFailedCodeAttempt(clientKey: string) {
 
 function clearFailedCodeAttempts(clientKey: string) {
   failedCodeAttempts.delete(clientKey);
+}
+
+function getMissingRegistrationConfig() {
+  const required = [
+    "DPP_REGISTRATION_ACCESS_CODE",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+  ];
+
+  return required.filter((key) => !process.env[key]?.trim());
+}
+
+function isRegistrationConfigurationError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const record = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
+  const code = typeof record.code === "string" ? record.code : "";
+
+  return (
+    message.includes("environment variables are not configured") ||
+    message.includes("relation") && message.includes("customer_access") ||
+    message.includes("schema cache") ||
+    message.includes("permission denied") ||
+    code === "42P01" ||
+    code === "42501" ||
+    code === "PGRST205"
+  );
+}
+
+function sanitizeRegistrationError(error: unknown) {
+  const record = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
+  const message = error instanceof Error ? error.message : String(error);
+  const stack = error instanceof Error ? error.stack : undefined;
+
+  return {
+    code: typeof record.code === "string" ? record.code : undefined,
+    message,
+    stack,
+    status: typeof record.status === "number" ? record.status : undefined,
+  };
+}
+
+function logRegistrationRouteError(stage: string, details: Record<string, unknown>) {
+  console.error("Produto Pronto registration failed", {
+    ...details,
+    stage,
+  });
 }
 
 function response(
