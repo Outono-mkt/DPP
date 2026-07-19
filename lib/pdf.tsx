@@ -1,6 +1,6 @@
 import "server-only";
 
-import { existsSync } from "fs";
+import { readFileSync } from "fs";
 import path from "path";
 import {
   Document,
@@ -18,10 +18,19 @@ import type { ProductResult } from "@/types";
 
 type PdfInput = {
   createdAt: string;
+  logo?: {
+    disabled?: boolean;
+    path?: string;
+  };
   result: ProductResult;
   selectedFormat?: string;
   userDisplayName?: string | null;
   whatsappUrl?: string;
+};
+
+type LoadedPdfLogo = {
+  bytes: number;
+  src: string;
 };
 
 type StrategicSection = {
@@ -66,12 +75,30 @@ export async function generateProductResultPdf(input: PdfInput): Promise<Uint8Ar
     throw toPdfError("normalization", error);
   }
 
+  const logo = loadPdfLogo(input.logo);
   let buffer: Buffer;
 
   try {
-    buffer = await renderToBuffer(<ProductResultDocument {...input} result={safeResult} />);
+    buffer = await renderToBuffer(
+      <ProductResultDocument {...input} logo={undefined} logoSrc={logo?.src} result={safeResult} />,
+    );
   } catch (error) {
-    throw toPdfError("render", error);
+    if (!logo) {
+      throw toPdfError("render", error);
+    }
+
+    logPdfLogoEvent("PDF_RENDER_FAILED_WITH_LOGO", {
+      bytes: logo.bytes,
+      error: getErrorMessage(error),
+    });
+
+    try {
+      buffer = await renderToBuffer(
+        <ProductResultDocument {...input} logo={undefined} logoSrc={undefined} result={safeResult} />,
+      );
+    } catch (fallbackError) {
+      throw toPdfError("render", fallbackError);
+    }
   }
 
   if (!buffer || buffer.byteLength === 0) {
@@ -83,16 +110,16 @@ export async function generateProductResultPdf(input: PdfInput): Promise<Uint8Ar
 
 function ProductResultDocument({
   createdAt,
+  logoSrc,
   result,
   selectedFormat,
   userDisplayName,
   whatsappUrl,
-}: PdfInput) {
+}: PdfInput & { logoSrc?: string }) {
   const generatedDate = formatDate(createdAt);
   const format = selectedFormat?.trim() || "Formato definido pela estratégia";
   const principalName = getFirstText(result.nomes, result.ideia || "Produto Pronto");
   const sections = getStrategicSections(result, format);
-  const logoSrc = getPdfLogoSrc();
 
   return (
     <Document
@@ -878,8 +905,63 @@ function validateProductResultForPdf(result: ProductResult) {
   }
 }
 
-function getPdfLogoSrc() {
-  return existsSync(PDF_LOGO_PATH) ? PDF_LOGO_PATH : null;
+function loadPdfLogo(options?: PdfInput["logo"]): LoadedPdfLogo | null {
+  if (options?.disabled) {
+    logPdfLogoEvent("PDF_LOGO_LOAD_SKIPPED", { reason: "disabled" });
+    return null;
+  }
+
+  const logoPath = options?.path ?? PDF_LOGO_PATH;
+
+  try {
+    const logo = readFileSync(logoPath);
+
+    if (logo.byteLength === 0) {
+      logPdfLogoEvent("PDF_LOGO_LOAD_FAILED", { reason: "empty_file" });
+      return null;
+    }
+
+    if (!isPng(logo)) {
+      logPdfLogoEvent("PDF_LOGO_LOAD_FAILED", {
+        bytes: logo.byteLength,
+        reason: "invalid_png_signature",
+      });
+      return null;
+    }
+
+    logPdfLogoEvent("PDF_LOGO_LOADED", { bytes: logo.byteLength });
+    return {
+      bytes: logo.byteLength,
+      src: `data:image/png;base64,${logo.toString("base64")}`,
+    };
+  } catch (error) {
+    logPdfLogoEvent("PDF_LOGO_LOAD_FAILED", {
+      error: getErrorMessage(error),
+      reason: "read_error",
+    });
+    return null;
+  }
+}
+
+function isPng(value: Uint8Array) {
+  return (
+    value.byteLength > 8 &&
+    value[0] === 0x89 &&
+    value[1] === 0x50 &&
+    value[2] === 0x4e &&
+    value[3] === 0x47 &&
+    value[4] === 0x0d &&
+    value[5] === 0x0a &&
+    value[6] === 0x1a &&
+    value[7] === 0x0a
+  );
+}
+
+function logPdfLogoEvent(event: string, details: Record<string, unknown>) {
+  console.info(event, {
+    ...details,
+    asset: "public/brand/logo-produto-pronto-pdf.png",
+  });
 }
 
 const styles = StyleSheet.create({
