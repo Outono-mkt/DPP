@@ -22,7 +22,7 @@ export async function GET(
 
     if (!id) {
       return NextResponse.json(
-        { error: "Id do produto nao informado." },
+        { error: "Id do produto não informado." },
         { status: 400 },
       );
     }
@@ -35,7 +35,7 @@ export async function GET(
 
     if (!result) {
       return NextResponse.json(
-        { error: "Produto nao encontrado." },
+        { error: "Produto não encontrado." },
         { status: 404 },
       );
     }
@@ -90,15 +90,15 @@ export async function GET(
 function getPdfRouteErrorMessage(error: unknown) {
   if (error instanceof ProductResultPdfError) {
     if (error.stage === "normalization" || error.stage === "validation") {
-      return "Nao foi possivel preparar os dados deste produto para o PDF.";
+      return "Não foi possível preparar os dados deste produto para o PDF.";
     }
 
     if (error.stage === "render" || error.stage === "buffer") {
-      return "Nao foi possivel renderizar o PDF deste produto agora.";
+      return "Não foi possível renderizar o PDF deste produto agora.";
     }
   }
 
-  return "Nao foi possivel gerar o PDF agora.";
+  return "Não foi possível gerar o PDF agora.";
 }
 
 function logPdfRouteError({

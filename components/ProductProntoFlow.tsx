@@ -5,6 +5,7 @@ import Image from "next/image";
 
 import { AuthModal, type AuthModalKind } from "@/components/AuthModal";
 import { BrandLogo } from "@/components/BrandLogo";
+import { formatProductFormatLabel } from "@/lib/format-labels";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { WHATSAPP_URL } from "@/lib/whatsapp";
 import type {
@@ -81,14 +82,14 @@ const initialRegenerationLimits: Record<DiscoveryStage, number> = {
 
 const experienceOptions: QuestionOption[] = [
   { label: "Nunca criei nada", value: "Nunca criei nada" },
-  { label: "Ja tentei mas nao vendi", value: "Ja tentei mas nao vendi" },
-  { label: "Ja vendi e quero melhorar", value: "Ja vendi e quero melhorar" },
+  { label: "Já tentei mas não vendi", value: "Ja tentei mas nao vendi" },
+  { label: "Já vendi e quero melhorar", value: "Ja vendi e quero melhorar" },
 ];
 
 const loadingPhrases = [
   "Analisando seu conhecimento",
-  "Encontrando o publico mais promissor",
-  "Organizando a estrategia",
+  "Encontrando o público mais promissor",
+  "Organizando a estratégia",
   "Montando seu produto",
 ];
 
@@ -319,7 +320,7 @@ export function ProductProntoFlow({
       setCurrentQuestion(2);
       setStep("creation");
     } catch {
-      setFlowError("Nao conseguimos gerar sugestoes agora. Revise suas respostas e tente novamente.");
+      setFlowError("Não conseguimos gerar sugestões agora. Revise suas respostas e tente novamente.");
       setStep("creation");
     }
   }
@@ -355,7 +356,7 @@ export function ProductProntoFlow({
         [stage]: Math.max(current[stage] - 1, 0),
       }));
     } catch {
-      setFlowError("Nao conseguimos gerar novas sugestoes agora. Tente novamente em alguns instantes.");
+      setFlowError("Não conseguimos gerar novas sugestões agora. Tente novamente em alguns instantes.");
     } finally {
       setRegeneratingStage(null);
     }
@@ -377,7 +378,7 @@ export function ProductProntoFlow({
       setStep("result");
       void saveGeneratedProduct(input, result);
     } catch {
-      setFlowError("Nao foi possivel gerar seu produto agora. Revise suas respostas e tente novamente.");
+      setFlowError("Não foi possível gerar seu produto agora. Revise suas respostas e tente novamente.");
       setStep("result");
     }
   }
@@ -388,7 +389,7 @@ export function ProductProntoFlow({
       const products = await requestSavedProducts();
       setSavedProducts(products);
     } catch {
-      setHistoryError("Nao foi possivel carregar seus produtos criados agora.");
+      setHistoryError("Não foi possível carregar seus produtos criados agora.");
     }
   }
 
@@ -402,7 +403,7 @@ export function ProductProntoFlow({
       setPersistenceMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel salvar este produto automaticamente.",
+          : "Não foi possível salvar este produto automaticamente.",
       );
       void refreshSavedProducts();
     }
@@ -461,7 +462,7 @@ export function ProductProntoFlow({
         setStep("dashboard");
       }
     } catch {
-      setPersistenceMessage("Nao foi possivel excluir este produto agora.");
+      setPersistenceMessage("Não foi possível excluir este produto agora.");
     } finally {
       setDeletingProductId(null);
     }
@@ -708,7 +709,7 @@ async function requestSaveProduct(
   };
 
   if (!response.ok || !payload.result) {
-    throw new Error(payload.error ?? "Nao foi possivel salvar este produto automaticamente.");
+    throw new Error(payload.error ?? "Não foi possível salvar este produto automaticamente.");
   }
 
   return payload.result;
@@ -783,8 +784,8 @@ function getPdfDownloadFilename(contentDisposition: string, resultId: string) {
 
 function pdfDownloadFallbackMessage() {
   return (
-    "Nao foi possivel gerar o PDF. " +
-    "Tente novamente. Se o problema continuar, atualize a pagina."
+    "Não foi possível gerar o PDF. " +
+    "Tente novamente. Se o problema continuar, atualize a página."
   );
 }
 function hasRecoveryUrlMarker() {
@@ -1248,9 +1249,9 @@ function renderOnboardingStep({
   if (currentQuestion === 0) {
     return (
       <TextStep
-        helper="Quanto mais detalhes voce der, melhor a IA vai transformar seu conhecimento em um produto."
+        helper="Quanto mais detalhes você der, melhor a IA vai transformar seu conhecimento em um produto."
         onChange={(value) => onUpdateAnswer("profile", value)}
-        title="Quem e voce, qual sua profissao, o que voce faz bem e o que gostaria de ensinar?"
+        title="Quem é você, qual sua profissão, o que você faz bem e o que gostaria de ensinar?"
         value={answers.profile}
       />
     );
@@ -1259,9 +1260,9 @@ function renderOnboardingStep({
   if (currentQuestion === 1) {
     return (
       <TextStep
-        helper="Pode descrever uma pessoa, um grupo, uma situacao ou um tipo de cliente."
+        helper="Pode descrever uma pessoa, um grupo, uma situação ou um tipo de cliente."
         onChange={(value) => onUpdateAnswer("targetAudienceDescription", value)}
-        title="Quem voce gostaria de ajudar ou transformar com seu conhecimento?"
+        title="Quem você gostaria de ajudar ou transformar com seu conhecimento?"
         value={answers.targetAudienceDescription}
       />
     );
@@ -1270,8 +1271,8 @@ function renderOnboardingStep({
   if (currentQuestion === 2) {
     return (
       <CardStep
-        customLabel="Escrever meu proprio publico"
-        customPlaceholder="Descreva seu publico com suas palavras"
+        customLabel="Escrever meu próprio público"
+        customPlaceholder="Descreva seu público com suas palavras"
         customValue={customAnswers.audience}
         helper="Escolha o caminho com mais potencial para o seu produto."
         items={(discoveryResult?.publicos ?? []).map((item) => ({
@@ -1288,7 +1289,7 @@ function renderOnboardingStep({
         regenerationRemaining={regenerationLimits.audience}
         regenerating={regeneratingStage === "audience"}
         selectedValue={answers.selectedAudience}
-        title="Escolha seu melhor publico"
+        title="Escolha seu melhor público"
       />
     );
   }
@@ -1296,7 +1297,7 @@ function renderOnboardingStep({
   if (currentQuestion === 3) {
     return (
       <CardStep
-        customLabel="Escrever minha propria dor"
+        customLabel="Escrever minha própria dor"
         customPlaceholder="Descreva a dor principal"
         customValue={customAnswers.pain}
         helper="A dor certa deixa a promessa do produto mais clara e desejada."
@@ -1322,8 +1323,8 @@ function renderOnboardingStep({
   if (currentQuestion === 4) {
     return (
       <CardStep
-        customLabel="Escrever minha propria transformacao"
-        customPlaceholder="Descreva a transformacao desejada"
+        customLabel="Escrever minha própria transformação"
+        customPlaceholder="Descreva a transformação desejada"
         customValue={customAnswers.transformation}
         helper="Escolha o resultado que seu aluno mais gostaria de conquistar."
         items={(discoveryResult?.transformacoes ?? []).map((item) => ({
@@ -1340,7 +1341,7 @@ function renderOnboardingStep({
         regenerationRemaining={regenerationLimits.transformation}
         regenerating={regeneratingStage === "transformation"}
         selectedValue={answers.selectedTransformation}
-        title="Escolha a transformacao"
+        title="Escolha a transformação"
       />
     );
   }
@@ -1348,10 +1349,10 @@ function renderOnboardingStep({
   if (currentQuestion === 5) {
     return (
       <OptionsStep
-        helper="Isso ajuda a ajustar a complexidade da recomendacao."
+        helper="Isso ajuda a ajustar a complexidade da recomendação."
         onChange={(value) => onUpdateAnswer("experienceLevel", value)}
         options={experienceOptions}
-        title="Voce ja criou algum produto digital antes?"
+        title="Você já criou algum produto digital antes?"
         value={answers.experienceLevel}
       />
     );
@@ -1359,9 +1360,9 @@ function renderOnboardingStep({
 
   return (
     <CardStep
-      helper="Analisando seu conhecimento e seu objetivo, estes sao os formatos com melhor encaixe para comecar rapido sem perder estrategia."
+      helper="Analisando seu conhecimento e seu objetivo, estes são os formatos com melhor encaixe para começar rápido sem perder estratégia."
       items={(discoveryResult?.formatos ?? []).map((item) => ({
-        title: item.nome,
+        title: formatProductFormatLabel(item.nome, item.nome || item.titulo),
         description: item.descricao,
         why: item.porque,
         tradeoff: item.tradeoff,
@@ -1512,13 +1513,13 @@ function CardStep({
         {customLabel && marker ? (
           <div className="space-y-3">
             <ChoiceCard
-              description="Use esta opcao se nenhuma sugestao representar bem o que voce quer criar."
+              description="Use esta opção se nenhuma sugestão representar bem o que você quer criar."
               featured={false}
               onClick={() => onChange(marker)}
               selected={selectedValue === marker}
               title={customLabel}
-              tradeoff="Voce ganha controle, mas perde a analise comparativa da IA sobre os caminhos mais faceis de vender."
-              why="Esta opcao e util quando voce ja conhece muito bem o publico que quer atender."
+              tradeoff="Você ganha controle, mas perde a análise comparativa da IA sobre os caminhos mais fáceis de vender."
+              why="Esta opção é útil quando você já conhece muito bem o público que quer atender."
             />
             {selectedValue === marker ? (
               <textarea
@@ -1535,8 +1536,8 @@ function CardStep({
         <div className="mt-6 rounded-[22px] border border-black/10 bg-white px-4 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-ink">Novas sugestoes</p>
-              <div className="mt-2 flex gap-2" aria-label={`${regenerationRemaining} regeneracoes restantes`}>
+              <p className="text-sm font-semibold text-ink">Novas sugestões</p>
+              <div className="mt-2 flex gap-2" aria-label={`${regenerationRemaining} regenerações restantes`}>
                 {[0, 1, 2].map((index) => (
                   <span
                     className={`h-2.5 w-2.5 rounded-full ${
@@ -1548,7 +1549,7 @@ function CardStep({
               </div>
               {regenerationRemaining === 0 ? (
                 <p className="mt-2 text-sm leading-5 text-[#66635B]">
-                  Voce atingiu o limite de novas sugestoes desta etapa.
+                  Você atingiu o limite de novas sugestões desta etapa.
                 </p>
               ) : null}
             </div>
@@ -1558,7 +1559,7 @@ function CardStep({
               onClick={() => void onRegenerate()}
               type="button"
             >
-              {regenerating ? "Gerando..." : "Gerar novas sugestoes"}
+              {regenerating ? "Gerando..." : "Gerar novas sugestões"}
             </button>
           </div>
         </div>
@@ -1599,7 +1600,7 @@ function ChoiceCard({
       {featured ? (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-[#0D0D0D]">
-            Minha recomendacao
+            Minha recomendação
           </span>
           <span className="rounded-full border border-accent/30 px-3 py-1 text-xs font-semibold text-[#8B7334]">
             Mais recomendada
@@ -1630,7 +1631,7 @@ function ChoiceCard({
         onClick={onClick}
         type="button"
       >
-        Escolher esta opcao
+        Escolher esta opção
       </button>
     </article>
   );
@@ -1716,7 +1717,7 @@ function ProductsDashboard({
   products: SavedProductSummary[];
 }) {
   const reachedLimit = products.length >= 2;
-  const lastFormat = products[0]?.selected_format ?? "Nenhum ainda";
+  const lastFormat = formatProductFormatLabel(products[0]?.selected_format, "Nenhum ainda");
   const lastProduct = products[0] ?? null;
   const lastProductName = lastProduct
     ? (lastProduct.generated_result.nomes[0] ?? lastProduct.generated_result.ideia)
@@ -1879,7 +1880,7 @@ function ProductsDashboard({
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#8B7334]">
-                        {product.selected_format}
+                        {formatProductFormatLabel(product.selected_format)}
                       </p>
                       <h3 className="mt-3 text-xl font-semibold leading-snug text-ink">
                         {productName}
@@ -2088,16 +2089,6 @@ function ResultScreen({
       <div className="mb-7 rounded-[36px] border border-white/8 bg-surface p-6 shadow-2xl shadow-black/25 sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
-            <div className="mb-5 flex items-center gap-3">
-              <BrandLogo size="md" variant="light" />
-              <Image
-                alt=""
-                className="hidden h-11 w-11 object-contain sm:block"
-                height={1024}
-                src="/brand/logo-produto-pronto-icon.png"
-                width={1536}
-              />
-            </div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent-light">
               {isSavedResult ? "Produto salvo" : "Resultado"}
             </p>
@@ -2130,7 +2121,7 @@ function ResultScreen({
 
         {result ? (
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <ResultSummaryCard label="Formato" value={selectedFormat ?? "Produto digital"} />
+            <ResultSummaryCard label="Formato" value={formatProductFormatLabel(selectedFormat)} />
             <ResultSummaryCard label="Promessa" value={result.promessa} featured />
             <ResultSummaryCard label="Preço" value={result.preco} />
           </div>
@@ -2140,10 +2131,10 @@ function ResultScreen({
       {error ? (
         <div className="rounded-[28px] border border-red-400/20 bg-red-500/10 p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-red-200">
-            Geracao interrompida
+            Geração interrompida
           </p>
           <h2 className="mt-3 text-2xl font-semibold text-[#F7F5EF]">
-            Nao conseguimos gerar seu produto agora.
+            Não conseguimos gerar seu produto agora.
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted">{error}</p>
           <button
@@ -2283,12 +2274,16 @@ function ResultBlockList({ block }: { block: ResultBlock }) {
       <ul className="mt-5 grid gap-3 md:grid-cols-2">
         {block.content.map((item) => {
           const [status = "pendente", label = item] = item.split("||");
-          const marker = status === "concluido" ? "●" : status === "em_andamento" ? "●" : "○";
-          const color = status === "concluido" ? "text-emerald-700" : status === "em_andamento" ? "text-[#8B7334]" : "text-[#8A8983]";
+          const color =
+            status === "concluido"
+              ? "bg-emerald-700"
+              : status === "em_andamento"
+                ? "bg-[#8B7334]"
+                : "border border-[#8A8983]";
 
           return (
             <li className="flex items-center gap-3 rounded-[18px] bg-[#F3F1EB] px-4 py-3" key={item}>
-              <span className={`text-lg ${color}`}>{marker}</span>
+              <span aria-hidden="true" className={`h-3 w-3 shrink-0 rounded-full ${color}`} />
               <span className="text-sm font-semibold text-[#56534D]">{label}</span>
             </li>
           );
@@ -2341,26 +2336,26 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
       content: result.oportunidade,
     },
     { eyebrow: "Nicho Validado", title: "Seu produto vai atender", content: result.nicho },
-    { eyebrow: "Ideia do Produto", title: "Seu produto sera", content: result.ideia },
+    { eyebrow: "Ideia do Produto", title: "Seu produto será", content: result.ideia },
     {
-      eyebrow: "Sugestoes de Nome",
-      title: "Escolha um nome ou use como inspiracao",
+      eyebrow: "Sugestões de Nome",
+      title: "Escolha um nome ou use como inspiração",
       content: result.nomes,
     },
     { eyebrow: "A Promessa Principal", title: "O que seu produto promete", content: result.promessa },
     {
-      eyebrow: "Mecanismo Unico",
+      eyebrow: "Mecanismo Único",
       title: result.mecanismo.nome,
       content: result.mecanismo.explicacao,
     },
     {
-      eyebrow: "Beneficios que Voce Pode Vender",
+      eyebrow: "Benefícios que Você Pode Vender",
       title: "Argumentos concretos para sua oferta",
       content: result.beneficios,
     },
     {
       eyebrow: "Perfis Ideais de Cliente",
-      title: "Recortes de publico com maior potencial",
+      title: "Recortes de público com maior potencial",
       content: result.perfis_clientes.map((profile) => `${profile.titulo}: ${profile.descricao}`),
     },
     {
@@ -2374,7 +2369,7 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
       content: result.estrutura,
     },
     {
-      eyebrow: "Objecoes Principais",
+      eyebrow: "Objeções Principais",
       title: "O que o cliente pode pensar antes de comprar",
       content: result.objecoes.map(
         (objection) =>
@@ -2383,26 +2378,26 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
     },
     {
       eyebrow: "Como Vender Esse Produto",
-      title: "Direcao comercial simples",
+      title: "Direção comercial simples",
       content: [
-        `Angulo principal: ${result.como_vender.angulo_principal}`,
+        `Ângulo principal: ${result.como_vender.angulo_principal}`,
         `Problema de entrada: ${result.como_vender.problema_de_entrada}`,
-        `Transformacao destacada: ${result.como_vender.transformacao_destacada}`,
+        `Transformação destacada: ${result.como_vender.transformacao_destacada}`,
         `Prova recomendada: ${result.como_vender.prova_recomendada}`,
         `CTA recomendado: ${result.como_vender.cta_recomendado}`,
       ],
     },
-    { eyebrow: "Preco Sugerido", title: "Preco ideal para lancamento", content: result.preco },
-    { eyebrow: "Proximos Passos", title: "Seu produto esta desenhado", content: result.proximo_passo },
+    { eyebrow: "Preço Sugerido", title: "Preço ideal para lançamento", content: result.preco },
+    { eyebrow: "Próximos Passos", title: "Seu produto está desenhado", content: result.proximo_passo },
     {
-      eyebrow: "Plano de Execucao",
+      eyebrow: "Plano de Execução",
       title: "Checklist para tirar do papel",
       content: result.plano_execucao.map((group) => `${group.etapa}||${group.itens.join("||")}`),
       variant: "checklist",
     },
     {
       eyebrow: "Status do Projeto",
-      title: "O que ja esta pronto e o que vem agora",
+      title: "O que já está pronto e o que vem agora",
       content: result.status_projeto.map((item) => `${item.status}||${item.etapa}`),
       variant: "status",
     },

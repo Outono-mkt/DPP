@@ -4,6 +4,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import {
   Document,
+  Font,
   Image,
   Link,
   Page,
@@ -14,6 +15,7 @@ import {
 } from "@react-pdf/renderer";
 import type React from "react";
 
+import { formatProductFormatLabel } from "@/lib/format-labels";
 import type { ProductResult } from "@/types";
 
 type PdfInput = {
@@ -64,6 +66,18 @@ const COLORS = {
 };
 
 const PDF_LOGO_PATH = path.join(process.cwd(), "public", "brand", "logo-produto-pronto-pdf.png");
+const PDF_FONT_FAMILY = "ProdutoProntoPdfSans";
+const PDF_FONT_PATH = path.join(
+  process.cwd(),
+  "public",
+  "fonts",
+  "DejaVuSans.ttf",
+);
+
+Font.register({
+  family: PDF_FONT_FAMILY,
+  src: PDF_FONT_PATH,
+});
 
 export async function generateProductResultPdf(input: PdfInput): Promise<Uint8Array> {
   let safeResult: ProductResult;
@@ -117,7 +131,7 @@ function ProductResultDocument({
   whatsappUrl,
 }: PdfInput & { logoSrc?: string }) {
   const generatedDate = formatDate(createdAt);
-  const format = selectedFormat?.trim() || "Formato definido pela estratégia";
+  const format = formatProductFormatLabel(selectedFormat, "Formato definido pela estratégia");
   const principalName = getFirstText(result.nomes, result.ideia || "Produto Pronto");
   const sections = getStrategicSections(result, format);
 
@@ -197,7 +211,7 @@ function ProductResultDocument({
 
       <Page size="A4" style={styles.page}>
         <RunningFooter generatedDate={generatedDate} />
-        <Text style={styles.pageEyebrow}>Execucao</Text>
+        <Text style={styles.pageEyebrow}>Execução</Text>
         <Text style={styles.pageTitle}>Checklist Executivo</Text>
         <ExecutiveChecklist items={getExecutiveChecklist(format)} />
       </Page>
@@ -322,7 +336,7 @@ function getStrategicSections(result: ProductResult, selectedFormat: string): St
       children: <Paragraph>{result.proximo_passo}</Paragraph>,
     },
     {
-      title: "Plano de Execucao",
+      title: "Plano de Execução",
       minPresenceAhead: 190,
       children: <ExecutionChecklist groups={result.plano_execucao} />,
     },
@@ -587,7 +601,7 @@ function getStructureUnit(format: string) {
   const normalized = removeDiacritics(format).toLowerCase();
 
   if (normalized.includes("mentoria")) return "Encontro";
-  if (normalized.includes("curso") || normalized.includes("aula")) return "Modulo";
+  if (normalized.includes("curso") || normalized.includes("aula")) return "Módulo";
   if (normalized.includes("planilha")) return "Aba";
   if (normalized.includes("desafio")) return "Dia";
   if (normalized.includes("saas") || normalized.includes("sistema") || normalized.includes("ferramenta")) {
@@ -627,19 +641,19 @@ function normalizePdfProductResult(value: unknown): ProductResult {
     ? (value as Partial<ProductResult>)
     : {};
   const ideia = asPdfString(result.ideia, "Produto digital pronto para validar");
-  const promessa = asPdfString(result.promessa, "Uma transformacao clara para o cliente certo");
+  const promessa = asPdfString(result.promessa, "Uma transformação clara para o cliente certo");
   const estrutura = toPdfStringArray(result.estrutura);
   const mecanismo = normalizePdfStringObject(result.mecanismo, {
-    nome: "Execucao Guiada",
-    explicacao: "Um caminho pratico para transformar conhecimento em entrega vendavel.",
+    nome: "Execução Guiada",
+    explicacao: "Um caminho prático para transformar conhecimento em entrega vendável.",
   });
 
   return {
     oportunidade: asPdfString(
       result.oportunidade,
-      "Existe uma oportunidade de transformar conhecimento pratico em uma oferta simples, especifica e vendavel.",
+      "Existe uma oportunidade de transformar conhecimento prático em uma oferta simples, específica e vendável.",
     ),
-    nicho: asPdfString(result.nicho, "Publico especifico com uma dor clara."),
+    nicho: asPdfString(result.nicho, "Público específico com uma dor clara."),
     ideia,
     nomes: toPdfStringArray(result.nomes) as ProductResult["nomes"],
     promessa,
@@ -653,19 +667,19 @@ function normalizePdfProductResult(value: unknown): ProductResult {
       angulo_principal: "Apresente a promessa principal de forma direta.",
       problema_de_entrada: "Mostre a situacao que o cliente reconhece.",
       transformacao_destacada: promessa,
-      prova_recomendada: "Use exemplos simples, bastidores ou demonstracao do metodo.",
+      prova_recomendada: "Use exemplos simples, bastidores ou demonstração do método.",
       cta_recomendado: "Convide para o primeiro passo.",
     }),
-    preco: asPdfString(result.preco, "Faixa de preco a validar com os primeiros compradores."),
+    preco: asPdfString(result.preco, "Faixa de preço a validar com os primeiros compradores."),
     proximo_passo: asPdfString(result.proximo_passo, "Validar a promessa, montar a entrega e fazer a primeira oferta."),
     plano_execucao: normalizePdfExecutionPlan(result.plano_execucao),
     status_projeto: normalizePdfStatus(result.status_projeto),
     cta_consultoria: normalizePdfStringObject(result.cta_consultoria, {
-      titulo: "Seu produto ja esta estruturado.",
-      contexto: "Agora comeca a etapa mais importante: transformar essa estrategia em vendas reais.",
+      titulo: "Seu produto já está estruturado.",
+      contexto: "Agora começa a etapa mais importante: transformar essa estratégia em vendas reais.",
       descricao:
-        "Na Consultoria Plano de Acao de 30 dias, eu monto com voce um plano personalizado para construir, lancar e vender esse produto da forma mais rapida e organizada possivel.",
-      botao: "Quero montar meu Plano de Acao de 30 dias",
+        "Na Consultoria Plano de Ação de 30 dias, eu monto com você um plano personalizado para construir, lançar e vender esse produto da forma mais rápida e organizada possível.",
+      botao: "Quero montar meu Plano de Ação de 30 dias",
     }),
   };
 }
@@ -673,11 +687,11 @@ function normalizePdfProductResult(value: unknown): ProductResult {
 function getProductChoiceReasons(result: ProductResult, format: string) {
   return [
     `Resolve uma dor urgente: ${result.nicho}`,
-    `Aproveita a competencia central por tras de: ${result.promessa}`,
+    `Aproveita a competência central por trás de: ${result.promessa}`,
     `Nasce de um mecanismo claro: ${result.mecanismo.nome}`,
     `Pode ser produzido rapidamente no formato ${format}`,
-    "Possui valor percebido porque entrega uma transformacao especifica",
-    `Abre caminho para proximas ofertas a partir de ${getFirstText(result.nomes, result.ideia)}`,
+    "Possui valor percebido porque entrega uma transformação específica",
+    `Abre caminho para próximas ofertas a partir de ${getFirstText(result.nomes, result.ideia)}`,
   ];
 }
 
@@ -687,12 +701,12 @@ function getExecutiveChecklist(format: string) {
   if (normalizedFormat.includes("mentoria")) {
     return [
       "Validar promessa com potenciais mentorados",
-      "Validar preco da primeira turma",
+      "Validar preço da primeira turma",
       "Criar roteiro dos encontros",
       "Preparar material de apoio",
       "Configurar checkout",
-      "Criar pagina ou mensagem de convite",
-      "Publicar agenda de inscricoes",
+      "Criar página ou mensagem de convite",
+      "Publicar agenda de inscrições",
       "Convidar os primeiros contatos",
       "Registrar objecoes dos interessados",
       "Fechar a primeira vaga",
@@ -702,13 +716,13 @@ function getExecutiveChecklist(format: string) {
   if (normalizedFormat.includes("ebook") || normalizedFormat.includes("pdf")) {
     return [
       "Validar promessa do material",
-      "Validar preco do ebook",
-      "Criar sumario executivo",
+      "Validar preço do e-book",
+      "Criar sumário executivo",
       "Produzir conteudo principal",
       "Revisar exemplos e checklists",
       "Diagramar arquivo final",
       "Configurar checkout",
-      "Criar pagina ou mensagem de venda",
+      "Criar página ou mensagem de venda",
       "Divulgar para os primeiros contatos",
       "Realizar a primeira venda",
     ];
@@ -717,13 +731,13 @@ function getExecutiveChecklist(format: string) {
   if (normalizedFormat.includes("curso") || normalizedFormat.includes("aula")) {
     return [
       "Validar promessa do curso",
-      "Validar preco da primeira versao",
+      "Validar preço da primeira versão",
       "Criar roteiro das aulas",
       "Gravar os blocos essenciais",
-      "Revisar audio, video e ordem das aulas",
-      "Publicar area de entrega",
+      "Revisar áudio, vídeo e ordem das aulas",
+      "Publicar área de entrega",
       "Configurar checkout",
-      "Criar pagina ou mensagem de venda",
+      "Criar página ou mensagem de venda",
       "Divulgar para os primeiros contatos",
       "Realizar a primeira venda",
     ];
@@ -736,27 +750,27 @@ function getExecutiveChecklist(format: string) {
   ) {
     return [
       "Validar problema principal",
-      "Validar preco da primeira versao",
-      "Desenhar fluxo minimo da ferramenta",
-      "Criar MVP com a funcao central",
-      "Testar com usuarios reais",
+      "Validar preço da primeira versão",
+      "Desenhar fluxo mínimo da ferramenta",
+      "Criar MVP com a função central",
+      "Testar com usuários reais",
       "Revisar entrega inicial",
       "Configurar checkout ou acesso",
-      "Criar pagina ou mensagem de venda",
-      "Convidar os primeiros usuarios",
+      "Criar página ou mensagem de venda",
+      "Convidar os primeiros usuários",
       "Fechar o primeiro cliente",
     ];
   }
 
   return [
-    "Validar promessa com pessoas do publico escolhido",
-    "Validar preco antes de finalizar a oferta",
+    "Validar promessa com pessoas do público escolhido",
+    "Validar preço antes de finalizar a oferta",
     "Criar estrutura principal do produto",
     "Produzir conteudo essencial",
     "Revisar entrega e exemplos",
     "Configurar checkout",
-    "Criar pagina ou mensagem de venda",
-    "Publicar primeira versao",
+    "Criar página ou mensagem de venda",
+    "Publicar primeira versão",
     "Divulgar para os primeiros contatos",
     "Realizar a primeira venda",
   ];
@@ -786,7 +800,7 @@ function normalizePdfProfiles(value: unknown): ProductResult["perfis_clientes"] 
       const profile = item as Record<string, unknown>;
       return {
         titulo: asPdfString(profile.titulo, "Perfil sem titulo"),
-        descricao: asPdfString(profile.descricao, "Descricao nao informada."),
+        descricao: asPdfString(profile.descricao, "Descrição não informada."),
       };
     }) as ProductResult["perfis_clientes"];
 }
@@ -801,8 +815,8 @@ function normalizePdfObjections(value: unknown): ProductResult["objecoes"] {
     .map((item) => {
       const objection = item as Record<string, unknown>;
       return {
-        objecao: asPdfString(objection.objecao, "Objecao nao informada"),
-        porque_aparece: asPdfString(objection.porque_aparece, "Motivo nao informado."),
+        objecao: asPdfString(objection.objecao, "Objeção não informada"),
+        porque_aparece: asPdfString(objection.porque_aparece, "Motivo não informado."),
         como_responder: asPdfString(objection.como_responder, "Responder com clareza e prova simples."),
       };
     }) as ProductResult["objecoes"];
@@ -818,7 +832,7 @@ function normalizePdfExecutionPlan(value: unknown): ProductResult["plano_execuca
     .map((item) => {
       const group = item as Record<string, unknown>;
       return {
-        etapa: asPdfString(group.etapa, "Execucao"),
+        etapa: asPdfString(group.etapa, "Execução"),
         itens: toPdfStringArray(group.itens),
       };
     })
@@ -979,7 +993,7 @@ const styles = StyleSheet.create({
   },
   coverBrand: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 18,
     letterSpacing: 0,
   },
@@ -1000,13 +1014,13 @@ const styles = StyleSheet.create({
   },
   coverKicker: {
     color: COLORS.paper,
-    fontFamily: "Helvetica",
+    fontFamily: PDF_FONT_FAMILY,
     fontSize: 15,
     marginBottom: 18,
   },
   coverTitle: {
     color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 39,
     lineHeight: 1.12,
     marginBottom: 34,
@@ -1028,7 +1042,7 @@ const styles = StyleSheet.create({
   page: {
     backgroundColor: COLORS.paper,
     color: COLORS.ink,
-    fontFamily: "Helvetica",
+    fontFamily: PDF_FONT_FAMILY,
     fontSize: 10,
     lineHeight: 1.42,
     paddingBottom: 62,
@@ -1037,7 +1051,7 @@ const styles = StyleSheet.create({
   },
   pageEyebrow: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 9,
     letterSpacing: 0,
     marginBottom: 8,
@@ -1045,7 +1059,7 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     color: COLORS.ink,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 24,
     lineHeight: 1.15,
     marginBottom: 24,
@@ -1068,7 +1082,7 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 9,
     marginBottom: 7,
     textTransform: "uppercase",
@@ -1086,14 +1100,14 @@ const styles = StyleSheet.create({
   },
   promiseLabel: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 10,
     marginBottom: 9,
     textTransform: "uppercase",
   },
   promiseText: {
     color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 17,
     lineHeight: 1.32,
   },
@@ -1110,7 +1124,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.black,
     borderRadius: 4,
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 10,
     paddingHorizontal: 7,
     paddingVertical: 5,
@@ -1120,7 +1134,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: COLORS.ink,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 15,
     marginBottom: 6,
   },
@@ -1146,7 +1160,7 @@ const styles = StyleSheet.create({
   },
   highlightText: {
     color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 13,
     lineHeight: 1.35,
   },
@@ -1162,7 +1176,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: COLORS.ink,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 10.8,
     lineHeight: 1.3,
     marginBottom: 4,
@@ -1186,18 +1200,18 @@ const styles = StyleSheet.create({
   },
   nameIndex: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 11,
     width: 18,
   },
   nameText: {
     color: COLORS.ink,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 12,
   },
   nameTextFeatured: {
     color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 14,
   },
   twoColumnGrid: {
@@ -1217,7 +1231,7 @@ const styles = StyleSheet.create({
   },
   bullet: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 10,
     width: 8,
   },
@@ -1244,7 +1258,7 @@ const styles = StyleSheet.create({
   },
   quoteText: {
     color: COLORS.ink,
-    fontFamily: "Helvetica-Oblique",
+    fontFamily: PDF_FONT_FAMILY,
     fontSize: 10.5,
     lineHeight: 1.35,
   },
@@ -1262,7 +1276,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.black,
     borderRadius: 12,
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 10,
     paddingBottom: 5,
     paddingTop: 5,
@@ -1311,7 +1325,7 @@ const styles = StyleSheet.create({
   roadmapArrow: {
     alignSelf: "center",
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 12,
     marginBottom: -10,
     marginTop: 2,
@@ -1345,7 +1359,7 @@ const styles = StyleSheet.create({
   },
   reasonIndex: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 12,
     marginBottom: 9,
   },
@@ -1394,19 +1408,19 @@ const styles = StyleSheet.create({
   },
   statusDone: {
     color: "#237a4b",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 11,
     width: 12,
   },
   statusCurrent: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 11,
     width: 12,
   },
   statusPending: {
     color: COLORS.muted,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 11,
     width: 12,
   },
@@ -1415,7 +1429,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: COLORS.gold,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 8.7,
     textTransform: "uppercase",
   },
@@ -1439,7 +1453,7 @@ const styles = StyleSheet.create({
   },
   metaValueDark: {
     color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 12,
     lineHeight: 1.25,
   },
@@ -1450,7 +1464,7 @@ const styles = StyleSheet.create({
   },
   metaValueText: {
     color: COLORS.ink,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 11,
   },
   runningFooter: {
@@ -1478,7 +1492,7 @@ const styles = StyleSheet.create({
   },
   finalTitle: {
     color: COLORS.white,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 28,
     lineHeight: 1.16,
     marginBottom: 24,
@@ -1493,7 +1507,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.gold,
     borderRadius: 5,
     color: COLORS.black,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: PDF_FONT_FAMILY, fontWeight: 700,
     fontSize: 12,
     marginTop: 16,
     paddingHorizontal: 18,
