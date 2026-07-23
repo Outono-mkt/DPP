@@ -7,13 +7,12 @@ export function LibraryHeader() {
         <BrandLogo variant="light" size="md" />
       </div>
       <p className="biblioteca-eyebrow">Desafio Produto Pronto</p>
-      <h1 id="biblioteca-title">Biblioteca de Prompts</h1>
+      <h1 id="biblioteca-title">Biblioteca de Prompts e Skills</h1>
       <p className="biblioteca-hero__description">
-        Todos os prompts, skills, checklists e materiais utilizados durante o Desafio Produto Pronto,
-        organizados para facilitar sua execução.
+        Todos os prompts e skills utilizados durante o Desafio Produto Pronto, organizados para facilitar sua execucao.
       </p>
       <p className="biblioteca-hero__notice">
-        Os materiais podem ser atualizados. Utilize sempre a versão disponível nesta biblioteca.
+        Os materiais podem ser atualizados. Utilize sempre a versao disponivel nesta biblioteca.
       </p>
     </header>
   );

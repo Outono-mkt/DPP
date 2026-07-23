@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { BibliotecaExperience } from "./BibliotecaExperience";
 import "./biblioteca.css";
 
-const title = "Biblioteca de Prompts - Desafio Produto Pronto";
+const title = "Biblioteca de Prompts e Skills - Desafio Produto Pronto";
 const description =
-  "Acesse os prompts, skills, checklists e materiais utilizados durante o Desafio Produto Pronto.";
+  "Acesse os prompts e skills utilizados durante o Desafio Produto Pronto.";
 const url = "https://produtopronto.vercel.app/biblioteca";
 
 export const metadata: Metadata = {

@@ -20,8 +20,6 @@ const initialFilters: MaterialFiltersValue = {
 export function BibliotecaExperience() {
   const [filters, setFilters] = useState(initialFilters);
   const [openCards, setOpenCards] = useState<string[]>([]);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [copyMessage, setCopyMessage] = useState("");
 
   const filteredMaterials = useMemo(() => filterMaterials(libraryMaterials, filters), [filters]);
   const visibleDays = dayGroups.filter((day) => day.id !== "todos");
@@ -44,21 +42,6 @@ export function BibliotecaExperience() {
     });
   }
 
-  async function copyPrompt(material: LibraryMaterial) {
-    if (!material.conteudoPrompt) return;
-    try {
-      await navigator.clipboard.writeText(material.conteudoPrompt);
-      setCopiedId(material.id);
-      setCopyMessage("Prompt copiado para a área de transferência.");
-      window.setTimeout(() => {
-        setCopiedId((current) => (current === material.id ? null : current));
-        setCopyMessage("");
-      }, 2200);
-    } catch {
-      setCopyMessage("Não foi possível copiar agora. Abra os detalhes e copie o texto manualmente.");
-    }
-  }
-
   return (
     <main className="biblioteca-page">
       <LibraryHeader />
@@ -66,7 +49,7 @@ export function BibliotecaExperience() {
         <DayNavigation activeDay={filters.day} onChange={changeDay} />
         <div className="biblioteca-section-heading">
           <div>
-            <p className="biblioteca-eyebrow">Sistema de execução</p>
+            <p className="biblioteca-eyebrow">Sistema de execucao</p>
             <h2>{activeDayInfo.title}</h2>
             <p>{activeDayInfo.objective}</p>
           </div>
@@ -77,9 +60,6 @@ export function BibliotecaExperience() {
           ) : null}
         </div>
         <MaterialFilters value={filters} onChange={updateFilters} />
-        <p className="biblioteca-copy-feedback" aria-live="polite">
-          {copyMessage}
-        </p>
         {filteredMaterials.length > 0 ? (
           <div className="biblioteca-day-sections">
             {visibleDays.map((day) => {
@@ -96,11 +76,9 @@ export function BibliotecaExperience() {
                   <div className="biblioteca-list">
                     {materials.map((material) => (
                       <MaterialCard
-                        copiedId={copiedId}
                         isOpen={openCards.includes(material.id)}
                         key={material.id}
                         material={material}
-                        onCopyPrompt={copyPrompt}
                         onToggle={toggleCard}
                       />
                     ))}
