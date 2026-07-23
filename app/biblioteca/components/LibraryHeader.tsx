@@ -4,7 +4,7 @@ export function LibraryHeader() {
   return (
     <header className="biblioteca-hero" aria-labelledby="biblioteca-title">
       <div className="biblioteca-hero__brand">
-        <BrandLogo variant="light" size="md" />
+        <BrandLogo height={84} width={280} variant="horizontal" />
       </div>
       <p className="biblioteca-eyebrow">Desafio Produto Pronto</p>
       <h1 id="biblioteca-title">Biblioteca de Prompts e Skills</h1>
