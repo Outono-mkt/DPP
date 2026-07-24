@@ -1,6 +1,6 @@
 export type LibraryDay = "todos" | "dia-1" | "dia-2" | "dia-3" | "dia-4" | "dia-5";
 
-export type MaterialType = "skill" | "prompt" | "link";
+export type MaterialType = "skill" | "prompt" | "link" | "checklist";
 
 export type MaterialPriority = "essencial" | "extra";
 

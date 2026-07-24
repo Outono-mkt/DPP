@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dia 4 · Publicar na Hotmart · Produto Pronto</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#C9A84C;--g2:#E8C96A;--gd:#7A6030;--gp:rgba(201,168,76,.06);--gb:rgba(201,168,76,.18);
+  --bg:#0D0D0D;--bg2:#141414;--bg3:#1A1A1A;--bg4:#222;
+  --ln:#2A2A2A;--ln2:#333;
+  --tx:#E8E4DC;--tx2:#A09880;--tx3:#6A6055;
+  --gn:#3A8A5A;--gnb:rgba(58,138,90,.08);--gnl:rgba(58,138,90,.25);
+  --rd:#C0392B;--r:3px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:'Inter',sans-serif;font-weight:300;line-height:1.7;min-height:100vh}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gd);border-radius:2px}
+
+/* HEADER */
+.hdr{position:sticky;top:0;z-index:100;background:rgba(13,13,13,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--ln2)}
+.hdr-in{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;flex-direction:column;gap:3px}
+.eye{font-size:9px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--g);opacity:.8}
+.bname{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--tx)}
+.pw{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.pf{font-size:11px;font-weight:500;color:var(--g);letter-spacing:.08em;min-width:36px;text-align:right}
+.pt{width:110px;height:2px;background:var(--bg4);border-radius:1px;overflow:hidden}
+.pf2{height:100%;background:linear-gradient(90deg,var(--gd),var(--g));border-radius:1px;width:0%;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* HERO */
+.hero{background:var(--bg2);border-bottom:1px solid var(--ln);padding:52px 24px 40px}
+.hero-in{max-width:760px;margin:0 auto}
+.kicker{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.kline{width:20px;height:1px;background:var(--g);opacity:.5}
+.ktxt{font-size:9px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--g);opacity:.8}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,6vw,50px);font-weight:600;color:var(--tx);line-height:1.1;letter-spacing:-.01em;margin-bottom:12px}
+.hero h1 em{font-style:italic;color:var(--g)}
+.hsub{font-size:14px;font-weight:300;color:var(--tx2);max-width:500px;line-height:1.75;margin-bottom:28px}
+.stats{display:flex;gap:28px;flex-wrap:wrap}
+.stat-n{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--g);line-height:1;display:block;margin-bottom:2px}
+.stat-l{font-size:9px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)}
+
+/* MAIN */
+.main{max-width:760px;margin:0 auto;padding:0 24px 100px}
+
+/* SUMMARY */
+.sum{background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);margin:32px 0 28px;overflow:hidden}
+.sum-hdr{padding:9px 18px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:8px}
+.shl{width:14px;height:1px;background:var(--g);opacity:.4}
+.sht{font-size:9px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3)}
+.sl{list-style:none;padding:3px 0}
+.sl li{border-bottom:1px solid var(--ln)}
+.sl li:last-child{border-bottom:none}
+.sl a{display:flex;align-items:center;gap:10px;padding:8px 18px;text-decoration:none;color:var(--tx2);font-size:13px;font-weight:300;transition:all .2s}
+.sl a:hover{color:var(--tx);background:var(--bg3)}
+.sn{font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--tx3);width:16px;flex-shrink:0}
+.sc{width:13px;height:13px;border-radius:50%;border:1px solid var(--ln2);flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center;transition:all .35s}
+.sc.ok{background:var(--gn);border-color:var(--gn)}
+.sc.ok::after{content:'';width:6px;height:3.5px;border-left:1.5px solid #fff;border-bottom:1.5px solid #fff;transform:rotate(-45deg) translateY(-1px);display:block}
+
+/* SECTION */
+.sec{display:flex;align-items:center;gap:12px;margin:36px 0 16px}
+.st{font-size:9px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--tx3);white-space:nowrap}
+.sl2{flex:1;height:1px;background:var(--ln)}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--ln);border-radius:var(--r);margin-bottom:8px;overflow:hidden;transition:border-color .3s}
+.card.ok{border-color:var(--gnl)}
+.card.active{border-color:rgba(201,168,76,.35)}
+.ch{display:flex;align-items:flex-start;gap:12px;padding:16px 20px;cursor:pointer;user-select:none;transition:background .2s}
+.ch:hover{background:rgba(255,255,255,.02)}
+.card.ok .ch{background:var(--gnb)}
+.card.active .ch{background:var(--gp)}
+.ci{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--gd);width:24px;flex-shrink:0;padding-top:3px}
+.card.ok .ci{color:var(--gn)}
+.cinfo{flex:1;min-width:0}
+.ct{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--tx);margin-bottom:3px;line-height:1.2}
+.card.ok .ct{color:rgba(106,191,138,.9)}
+.cm{font-size:11px;color:var(--tx3);display:flex;gap:0;flex-wrap:wrap;align-items:center}
+.cm span{margin-right:10px}
+.cm span::before{content:'· ';color:var(--ln2);margin-right:4px}
+.cm span:first-child::before{content:none}
+.bcrit{font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(192,57,43,.12);color:#E06050;border:1px solid rgba(192,57,43,.25);border-radius:2px;padding:1px 6px}
+.bfree{font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:var(--gp);color:var(--g);border:1px solid var(--gb);border-radius:2px;padding:1px 6px}
+.bnew{font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:rgba(58,138,90,.1);color:rgba(106,191,138,.9);border:1px solid var(--gnl);border-radius:2px;padding:1px 6px}
+.ca{color:var(--tx3);font-size:11px;transition:transform .3s;flex-shrink:0;margin-top:2px}
+.card.open .ca{transform:rotate(180deg)}
+.cb{display:none;padding:0 20px 22px}
+.card.open .cb{display:block}
+
+/* WHY */
+.why{border-left:2px solid var(--gd);padding:10px 14px;margin:2px 0 16px;background:var(--gp);border-radius:0 3px 3px 0}
+.wl{font-size:9px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--gd);margin-bottom:4px}
+.wt{font-size:12px;color:var(--tx2);line-height:1.7}
+
+/* DIAGRAM */
+.dgm{background:var(--bg);border:1px solid var(--ln2);border-radius:var(--r);margin:16px 0;overflow:hidden}
+.dc{padding:7px 12px;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:6px;background:var(--bg2)}
+.dd{width:5px;height:5px;border-radius:50%;background:var(--gd);flex-shrink:0}
+.dl{font-size:9px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)}
+.db{padding:12px;display:flex;flex-direction:column;gap:8px}
+.dr{display:flex;flex-direction:column;gap:3px}
+.drl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)}
+.drv{background:var(--bg2);border:1px solid var(--ln);border-radius:2px;padding:6px 9px;font-size:12px;color:var(--tx2)}
+.drv.g{color:var(--g);border-color:rgba(201,168,76,.3);background:rgba(201,168,76,.05)}
+.drv.gn{color:rgba(106,191,138,.9);border-color:var(--gnl);background:var(--gnb)}
+.ds{height:1px;background:var(--ln);margin:2px 0}
+.dp{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:6px 0}
+.dn{font-size:11px;color:var(--tx3);background:var(--bg2);border:1px solid var(--ln);border-radius:2px;padding:3px 8px;white-space:nowrap}
+.dn.a{color:var(--g);border-color:rgba(201,168,76,.3);background:rgba(201,168,76,.05)}
+.darr{color:var(--ln2);font-size:10px}
+.dnote{font-size:11px;color:var(--tx3);padding-top:8px;border-top:1px solid var(--ln);margin-top:2px;text-align:center;font-style:italic}
+
+/* STEPS */
+.steps{margin:16px 0}
+.slbl{font-size:9px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px}
+.steps ol{list-style:none;counter-reset:sc;padding:0}
+.steps ol li{counter-increment:sc;display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--ln)}
+.steps ol li:last-child{border-bottom:none}
+.steps ol li::before{content:counter(sc);font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--gd);background:var(--gp);border:1px solid var(--gb);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.steps ol li p{font-size:12px;color:var(--tx2);line-height:1.65}
+.steps ol li p strong{color:var(--tx);font-weight:500}
+code{font-family:'Courier New',monospace;background:rgba(201,168,76,.1);color:var(--g2);padding:1px 5px;border-radius:2px;font-size:11px}
+
+/* TIP / SUCCESS */
+.tip{background:var(--gp);border:1px solid var(--gb);border-radius:var(--r);padding:10px 14px;margin:12px 0}
+.suc{background:var(--gnb);border:1px solid var(--gnl);border-radius:var(--r);padding:10px 14px;margin:12px 0}
+.sul{font-size:9px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:rgba(106,191,138,.8);margin-bottom:4px}
+.sut{font-size:12px;color:rgba(106,191,138,.75);line-height:1.7}
+
+/* HIGHLIGHT BOX */
+.hbox{background:rgba(201,168,76,.04);border:1px solid rgba(201,168,76,.2);border-radius:var(--r);padding:12px 14px;margin:14px 0;display:flex;gap:10px;align-items:flex-start}
+.hbox-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.hbox-text{font-size:12px;color:var(--tx2);line-height:1.7}
+.hbox-text strong{color:var(--g);font-weight:500}
+
+/* BUTTON */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;margin-top:20px;background:transparent;color:var(--g);border:1px solid var(--gd);border-radius:var(--r);font-family:'Inter',sans-serif;font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .25s}
+.btn:hover{background:var(--g);color:#0D0D0D;border-color:var(--g)}
+.btn.ok{background:var(--gnb);border-color:var(--gnl);color:rgba(106,191,138,.9);cursor:default}
+.btn.ok:hover{background:var(--gnb);color:rgba(106,191,138,.9);border-color:var(--gnl)}
+.bi{width:14px;height:14px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn.ok .bi::after{content:'';width:6px;height:3.5px;border-left:1.5px solid rgba(106,191,138,.9);border-bottom:1.5px solid rgba(106,191,138,.9);transform:rotate(-45deg) translateY(-1px);display:block}
+
+/* FINISH */
+.fin{background:var(--bg2);border:1px solid var(--ln);border-top:1px solid rgba(201,168,76,.3);border-radius:var(--r);padding:40px 28px;margin-top:48px;text-align:center}
+.fk{font-size:9px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gd);display:block;margin-bottom:12px}
+.fh{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--tx);line-height:1.15;margin-bottom:10px}
+.fh em{color:var(--g);font-style:italic}
+.fp{font-size:13px;color:var(--tx2);line-height:1.75;max-width:420px;margin:0 auto 22px}
+.fa{background:var(--bg);border:1px solid var(--ln);border-left:2px solid var(--gd);text-align:left;padding:14px 16px;border-radius:0 var(--r) var(--r) 0}
+.fa p{font-size:12px;color:var(--tx2);line-height:1.7}
+.fa strong{color:var(--g);font-weight:500}
+
+/* FOOTER */
+footer{border-top:1px solid var(--ln);padding:20px 24px;text-align:center;font-family:'Inter',sans-serif;font-size:10px;font-weight:300;letter-spacing:.1em;color:var(--tx3);margin-top:60px}
+
+@media(max-width:600px){
+  .hero{padding:36px 16px 28px}
+  .main{padding:0 16px 80px}
+  .hdr-in{padding:12px 16px}
+  .pt{width:70px}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="brand">
+      <span class="eye">Dia 04 · Desafio Produto Pronto</span>
+      <span class="bname">Publicar na Hotmart</span>
+    </div>
+    <div class="pw">
+      <span class="pf" id="pf">0 / 9</span>
+      <div class="pt"><div class="pf2" id="pb"></div></div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-in">
+    <div class="kicker"><span class="kline"></span><span class="ktxt">Configuração passo a passo</span></div>
+    <h1>Coloque seu produto<br><em>no ar hoje.</em></h1>
+    <p class="hsub">Você tem a oferta pronta. Agora configure tudo na Hotmart — da conta até o link de vendas funcionando — seguindo esta lista etapa por etapa.</p>
+    <div class="stats">
+      <div><span class="stat-n">9</span><span class="stat-l">etapas guiadas</span></div>
+      <div><span class="stat-n">1h</span><span class="stat-l">de configuração</span></div>
+      <div><span class="stat-n">0</span><span class="stat-l">conhecimento técnico</span></div>
+    </div>
+  </div>
+</section>
+
+<main class="main">
+
+  <nav class="sum">
+    <div class="sum-hdr"><span class="shl"></span><span class="sht">Sumário</span></div>
+    <ul class="sl">
+      <li><a href="#e1"><span class="sn">01</span>Criar conta na Hotmart<span class="sc" id="s1"></span></a></li>
+      <li><a href="#e2"><span class="sn">02</span>Completar o perfil do produtor<span class="sc" id="s2"></span></a></li>
+      <li><a href="#e3"><span class="sn">03</span>Criar o produto<span class="sc" id="s3"></span></a></li>
+      <li><a href="#e4"><span class="sn">04</span>Configurar preço e garantia<span class="sc" id="s4"></span></a></li>
+      <li><a href="#e5"><span class="sn">05</span>Configurar a entrega<span class="sc" id="s5"></span></a></li>
+      <li><a href="#e6"><span class="sn">06</span>Criar a página de vendas com Hotmart Pages<span class="sc" id="s6"></span></a></li>
+      <li><a href="#e7"><span class="sn">07</span>Configurar e-mails com Hotmart Send<span class="sc" id="s7"></span></a></li>
+      <li><a href="#e8"><span class="sn">08</span>Gerar o link de vendas<span class="sc" id="s8"></span></a></li>
+      <li><a href="#e9"><span class="sn">09</span>Teste de compra com cupom 100%<span class="sc" id="s9"></span></a></li>
+    </ul>
+  </nav>
+
+  <!-- SEÇÃO 1 -->
+  <div class="sec"><span class="st">Conta</span><div class="sl2"></div></div>
+
+  <!-- E1 -->
+  <div class="card open active" id="e1">
+    <div class="ch" onclick="tog('e1')">
+      <span class="ci">01</span>
+      <div class="cinfo">
+        <div class="ct">Criar conta na Hotmart</div>
+        <div class="cm"><span>hotmart.com</span><span>5 min</span><span><span class="bfree">Gratuito</span></span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">A Hotmart é onde seu produto vai ser vendido e entregue. A conta é gratuita — você só paga uma porcentagem quando vender. Sem conta, não tem produto no ar.</p></div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Tela de cadastro · hotmart.com</span></div>
+        <div class="db">
+          <div class="dr"><div class="drl">Nome completo</div><div class="drv">Seu nome completo</div></div>
+          <div class="dr"><div class="drl">E-mail</div><div class="drv">voce@email.com</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">Tipo de conta</div><div class="drv g">Produtor — quero vender</div></div>
+          <div class="dnote">Use o mesmo e-mail que você já usa. Confirme o e-mail ao final.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Passo a passo</div><ol>
+        <li><p>Acesse <strong>hotmart.com</strong> e clique em <strong>Cadastre-se</strong>.</p></li>
+        <li><p>Preencha nome completo, e-mail e senha.</p></li>
+        <li><p>Escolha o tipo de conta: <strong>Produtor</strong>.</p></li>
+        <li><p>Confirme o e-mail recebido na caixa de entrada.</p></li>
+        <li><p>Faça login com a conta criada.</p></li>
+      </ol></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">Você vê o painel do produtor com o menu lateral completo.</p></div>
+      <button class="btn" onclick="done('e1',1)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- E2 -->
+  <div class="card" id="e2">
+    <div class="ch" onclick="tog('e2')">
+      <span class="ci">02</span>
+      <div class="cinfo">
+        <div class="ct">Completar o perfil do produtor</div>
+        <div class="cm"><span>Configurações</span><span>5 min</span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">Perfil completo libera todas as funcionalidades, incluindo o saque dos valores recebidos. Melhor fazer agora do que ser bloqueado depois da primeira venda.</p></div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Painel · Configurações · Meu perfil</span></div>
+        <div class="db">
+          <div class="dp">
+            <span class="dn">Painel</span><span class="darr">›</span>
+            <span class="dn a">Configurações</span><span class="darr">›</span>
+            <span class="dn a">Meu perfil</span>
+          </div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">Dados obrigatórios</div><div class="drv">CPF · Telefone · Endereço completo</div></div>
+          <div class="dr"><div class="drl">Foto de perfil</div><div class="drv g">Recomendado — aumenta credibilidade</div></div>
+          <div class="dnote">Preencha todos os campos com asterisco. São obrigatórios para saque.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Passo a passo</div><ol>
+        <li><p>No menu lateral, clique em <strong>Configurações</strong>.</p></li>
+        <li><p>Acesse <strong>Meu perfil</strong>.</p></li>
+        <li><p>Preencha CPF, telefone e endereço completo.</p></li>
+        <li><p>Adicione uma foto de perfil.</p></li>
+        <li><p>Salve as alterações.</p></li>
+      </ol></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">Todos os campos obrigatórios preenchidos sem aviso de pendência no painel.</p></div>
+      <button class="btn" onclick="done('e2',2)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 2 -->
+  <div class="sec"><span class="st">Produto</span><div class="sl2"></div></div>
+
+  <!-- E3 -->
+  <div class="card" id="e3">
+    <div class="ch" onclick="tog('e3')">
+      <span class="ci">03</span>
+      <div class="cinfo">
+        <div class="ct">Criar o produto</div>
+        <div class="cm"><span>Hotmart · Produtos</span><span>10 min</span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">Aqui você registra o produto na plataforma. Use o nome do Dia 1 e a promessa do Dia 3. Não precisa ser perfeito — tudo pode ser editado depois.</p></div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Novo produto · informações básicas</span></div>
+        <div class="db">
+          <div class="dr"><div class="drl">Nome do produto</div><div class="drv g">Use o nome gerado no Dia 1</div></div>
+          <div class="dr"><div class="drl">Formato</div><div class="drv">Curso online · E-book · Outros</div></div>
+          <div class="dr"><div class="drl">Descrição</div><div class="drv g">Use a promessa definida no Dia 3</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">Idioma</div><div class="drv">Português — Brasil</div></div>
+          <div class="dnote">Escolha o formato que corresponde ao produto criado no Dia 2.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Passo a passo</div><ol>
+        <li><p>No menu lateral, clique em <strong>Produtos</strong>.</p></li>
+        <li><p>Clique em <strong>Novo produto</strong>.</p></li>
+        <li><p>Escolha o formato conforme o que você criou no Dia 2.</p></li>
+        <li><p>Preencha nome e descrição com os dados dos Dias 1 e 3.</p></li>
+        <li><p>Selecione idioma: <strong>Português (Brasil)</strong>.</p></li>
+        <li><p>Clique em <strong>Salvar e continuar</strong>.</p></li>
+      </ol></div>
+      <div class="tip"><div class="wl">Dica</div><p class="wt">Não tente fazer perfeito agora. Imagem de capa e detalhes podem ser ajustados depois. O objetivo é registrar o produto.</p></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">O produto aparece em Meus produtos com o nome que você definiu.</p></div>
+      <button class="btn" onclick="done('e3',3)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- E4 -->
+  <div class="card" id="e4">
+    <div class="ch" onclick="tog('e4')">
+      <span class="ci">04</span>
+      <div class="cinfo">
+        <div class="ct">Configurar preço e garantia</div>
+        <div class="cm"><span>Produto · Preço</span><span>5 min</span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">Você definiu preço e garantia no Dia 3. Agora é só configurar. A garantia de 7 dias é gerenciada automaticamente pela Hotmart — sem trabalho extra da sua parte.</p></div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Configuração de preço e garantia</span></div>
+        <div class="db">
+          <div class="dr"><div class="drl">Moeda</div><div class="drv">BRL · Real Brasileiro</div></div>
+          <div class="dr"><div class="drl">Preço</div><div class="drv g">R$ valor definido no Dia 3</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">Garantia</div><div class="drv gn">7 dias · Incondicional</div></div>
+          <div class="dr"><div class="drl">Reembolso automático</div><div class="drv gn">Ativado — Hotmart gerencia</div></div>
+          <div class="dnote">A garantia de 7 dias é obrigatória no Brasil pela lei do consumidor.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Passo a passo</div><ol>
+        <li><p>Dentro do produto, acesse a aba <strong>Preço</strong>.</p></li>
+        <li><p>Selecione a moeda: <strong>BRL · Real</strong>.</p></li>
+        <li><p>Digite o preço definido no Dia 3.</p></li>
+        <li><p>Em Garantia, selecione <strong>7 dias</strong>.</p></li>
+        <li><p>Salve as configurações.</p></li>
+      </ol></div>
+      <div class="tip"><div class="wl">Sobre a garantia</div><p class="wt">A Hotmart gerencia todo o processo de reembolso automaticamente. O índice de reembolso em produtos de qualidade é baixíssimo — e a garantia aumenta muito as vendas.</p></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">O preço correto em BRL e a garantia de 7 dias aparecem como ativos.</p></div>
+      <button class="btn" onclick="done('e4',4)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- E5 -->
+  <div class="card" id="e5">
+    <div class="ch" onclick="tog('e5')">
+      <span class="ci">05</span>
+      <div class="cinfo">
+        <div class="ct">Configurar a entrega do produto</div>
+        <div class="cm"><span>Área de membros</span><span>10 min</span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">O comprador precisa receber o produto imediatamente após a compra. Entrega não configurada gera reembolso automático e reclamação.</p></div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Tipo de entrega por formato</span></div>
+        <div class="db">
+          <div class="dr"><div class="drl">Curso online</div><div class="drv g">Área de membros · upload dos vídeos por módulo</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">E-book · PDF · Checklist · Template</div><div class="drv g">Upload do arquivo · liberado após compra</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">Acesso automático</div><div class="drv gn">Ativado — comprador recebe ao finalizar</div></div>
+          <div class="dnote">Configure a entrega antes de criar a página de vendas.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Para curso online</div><ol>
+        <li><p>Dentro do produto, acesse <strong>Área de membros</strong>.</p></li>
+        <li><p>Crie os módulos conforme a estrutura do Dia 2.</p></li>
+        <li><p>Faça upload de cada aula no módulo correspondente.</p></li>
+        <li><p>Ative a área de membros.</p></li>
+      </ol></div>
+      <div class="steps"><div class="slbl">Para e-book, PDF, checklist ou template</div><ol>
+        <li><p>Acesse <strong>Arquivos</strong> ou <strong>Material complementar</strong>.</p></li>
+        <li><p>Faça upload do arquivo criado no Dia 2.</p></li>
+        <li><p>Ative a liberação automática após a compra.</p></li>
+      </ol></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">O conteúdo aparece disponível ao acessar como comprador.</p></div>
+      <button class="btn" onclick="done('e5',5)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 3 -->
+  <div class="sec"><span class="st">Página e e-mails</span><div class="sl2"></div></div>
+
+  <!-- E6 — HOTMART PAGES COM IA -->
+  <div class="card" id="e6">
+    <div class="ch" onclick="tog('e6')">
+      <span class="ci">06</span>
+      <div class="cinfo">
+        <div class="ct">Criar a página de vendas com Hotmart Pages</div>
+        <div class="cm"><span>Hotmart Pages</span><span>15 min</span><span><span class="bfree">Gratuito</span></span><span><span class="bnew">IA inclusa</span></span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">A Hotmart Pages permite criar a página de vendas gratuitamente, com IA que monta a estrutura a partir dos dados do produto. A copy das 9 sessões do Dia 3 já está pronta — aqui é só colar e publicar.</p></div>
+      <div class="hbox">
+        <span class="hbox-icon">✦</span>
+        <div class="hbox-text"><strong>Hotmart Pages com IA</strong> — ao criar a página, a Hotmart pode sugerir automaticamente o layout e os blocos com base nas informações do produto cadastrado. Use como ponto de partida e substitua pelos textos do arquivo do Dia 3.</div>
+      </div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Estrutura da página · ordem das sessões</span></div>
+        <div class="db">
+          <div class="dr"><div class="drl">1. Headline + 1º botão de compra</div><div class="drv g">Sessão 1 do arquivo do Dia 3</div></div>
+          <div class="dr"><div class="drl">2. Identificação com a dor</div><div class="drv">Sessão 2 do arquivo do Dia 3</div></div>
+          <div class="dr"><div class="drl">3. Stack de valor + 2º botão</div><div class="drv">Produto + bônus + valores percebidos</div></div>
+          <div class="dr"><div class="drl">4. Garantia de 7 dias</div><div class="drv gn">Sessão 7 do arquivo do Dia 3</div></div>
+          <div class="dr"><div class="drl">5. CTA final + 3º botão</div><div class="drv g">Texto orientado a resultado</div></div>
+          <div class="dnote">O botão de compra aparece no mínimo 3 vezes. Nunca use o texto "Comprar".</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Passo a passo</div><ol>
+        <li><p>Dentro do produto, acesse <strong>Página de vendas</strong>.</p></li>
+        <li><p>Clique em <strong>Hotmart Pages</strong> para abrir o editor.</p></li>
+        <li><p>Se a IA sugerir uma estrutura automática, use como base — não como versão final.</p></li>
+        <li><p>Abra o arquivo do Dia 3 com a copy das 9 sessões.</p></li>
+        <li><p>Substitua cada bloco da página pelo texto correspondente do arquivo.</p></li>
+        <li><p>Adicione o botão de compra em pelo menos 3 pontos da página.</p></li>
+        <li><p>Configure o texto do botão — use algo orientado a resultado, como <em>"Quero começar agora"</em>.</p></li>
+        <li><p>Publique a página e copie o link gerado.</p></li>
+      </ol></div>
+      <div class="tip"><div class="wl">Não tente fazer bonito agora</div><p class="wt">A copy é o que converte. Imagens, cores e detalhes visuais podem ser melhorados depois. O que precisa estar certo hoje é o texto certo nos lugares certos e os botões funcionando.</p></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">A página abre em link público, carrega no celular e o botão de compra leva para o checkout com produto e preço corretos.</p></div>
+      <button class="btn" onclick="done('e6',6)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- E7 — HOTMART SEND -->
+  <div class="card" id="e7">
+    <div class="ch" onclick="tog('e7')">
+      <span class="ci">07</span>
+      <div class="cinfo">
+        <div class="ct">Configurar e-mails com Hotmart Send</div>
+        <div class="cm"><span>Hotmart Send</span><span>15 min</span><span><span class="bfree">Até 100 leads grátis</span></span><span><span class="bnew">Novo</span></span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">O Hotmart Send permite captar até 100 leads gratuitamente e enviar e-mails automáticos após a compra. Você configura agora e o sistema trabalha por você: boas-vindas, entrega do produto e follow-up acontecem automaticamente.</p></div>
+      <div class="hbox">
+        <span class="hbox-icon">✦</span>
+        <div class="hbox-text"><strong>Hotmart Send gratuito</strong> — até 100 contatos e envios ilimitados no plano gratuito. Ideal para os primeiros clientes do desafio. Quando passar de 100, você avalia se quer continuar ou migrar para outra ferramenta.</div>
+      </div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">E-mails a configurar · sequência básica</span></div>
+        <div class="db">
+          <div class="dr"><div class="drl">E-mail 1 · Boas-vindas (imediato)</div><div class="drv g">Use o texto gerado no arquivo do Dia 3</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">E-mail 2 · Entrega do acesso (imediato)</div><div class="drv g">Link de acesso ao produto + instruções de uso</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">E-mail 3 · Follow-up (3 dias depois)</div><div class="drv">Como está o progresso? Dúvidas? Suporte.</div></div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">Gatilho de disparo</div><div class="drv gn">Compra confirmada · automático</div></div>
+          <div class="dnote">Configure pelo menos os 2 primeiros e-mails. O terceiro é recomendado mas pode ser adicionado depois.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Acessar o Hotmart Send</div><ol>
+        <li><p>No painel da Hotmart, acesse <strong>Ferramentas</strong> ou procure por <strong>Send</strong> no menu.</p></li>
+        <li><p>Crie uma conta no Hotmart Send — é gratuito e integrado com a Hotmart.</p></li>
+        <li><p>Conecte o Send ao produto que você criou na Etapa 3.</p></li>
+      </ol></div>
+      <div class="steps"><div class="slbl">Configurar o e-mail de boas-vindas e entrega</div><ol>
+        <li><p>No Send, clique em <strong>Automações</strong> ou <strong>Fluxos de e-mail</strong>.</p></li>
+        <li><p>Crie um novo fluxo com gatilho: <strong>Compra confirmada</strong>.</p></li>
+        <li><p>Adicione o <strong>E-mail 1 — Boas-vindas</strong> para disparo imediato. Use o texto do arquivo do Dia 3.</p></li>
+        <li><p>Adicione o <strong>E-mail 2 — Entrega do acesso</strong> para disparo imediato. Inclua o link de acesso ao produto ou à área de membros.</p></li>
+        <li><p>Adicione o <strong>E-mail 3 — Follow-up</strong> com atraso de 3 dias. Pergunte como está o progresso e ofereça suporte.</p></li>
+        <li><p>Ative o fluxo.</p></li>
+      </ol></div>
+      <div class="steps"><div class="slbl">Configurar a captura de leads (opcional)</div><ol>
+        <li><p>No Send, crie um formulário de captura para pessoas que visitam a página mas não compram.</p></li>
+        <li><p>Incorpore o formulário na página de vendas criada na Etapa 6.</p></li>
+        <li><p>Configure um e-mail automático de nutrição para quem se cadastrar sem comprar.</p></li>
+      </ol></div>
+      <div class="tip"><div class="wl">O que escrever nos e-mails</div><p class="wt">O texto do e-mail de boas-vindas e entrega já está no arquivo do Dia 3, na seção <strong>Instruções de entrega</strong>. Copie diretamente dali — não precisa criar do zero.</p></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">O fluxo de e-mails aparece como ativo no Send, conectado ao produto. Ao fazer o teste de compra na Etapa 9, os e-mails de boas-vindas e entrega chegam automaticamente.</p></div>
+      <button class="btn" onclick="done('e7',7)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 4 -->
+  <div class="sec"><span class="st">Link e teste</span><div class="sl2"></div></div>
+
+  <!-- E8 -->
+  <div class="card" id="e8">
+    <div class="ch" onclick="tog('e8')">
+      <span class="ci">08</span>
+      <div class="cinfo">
+        <div class="ct">Gerar o link de vendas</div>
+        <div class="cm"><span>Produto · Divulgação</span><span>3 min</span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">Esse link é o produto no mundo. Qualquer pessoa que clicar e comprar recebe o produto e os e-mails automaticamente. É ele que você vai compartilhar nos Stories e no WhatsApp no Dia 5.</p></div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Onde encontrar · Produto · Divulgação</span></div>
+        <div class="db">
+          <div class="dp">
+            <span class="dn">Meus produtos</span><span class="darr">›</span>
+            <span class="dn a">Produto</span><span class="darr">›</span>
+            <span class="dn a">Divulgação</span>
+          </div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">Link da página de vendas</div><div class="drv g">hotmart.com/product/seu-produto</div></div>
+          <div class="dr"><div class="drl">Link do checkout direto</div><div class="drv">pay.hotmart.com/seu-produto (opcional)</div></div>
+          <div class="dr"><div class="drl">O que acontece ao clicar</div><div class="drv gn">Página de vendas → checkout → e-mails automáticos</div></div>
+          <div class="dnote">Copie e guarde os dois links. O de página para divulgação, o de checkout para Stories com link direto.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Passo a passo</div><ol>
+        <li><p>Dentro do produto, acesse a aba <strong>Divulgação</strong>.</p></li>
+        <li><p>Copie o link da página de vendas.</p></li>
+        <li><p>Abra em aba anônima para confirmar que a página está correta.</p></li>
+        <li><p>Copie também o link do checkout direto, se disponível.</p></li>
+        <li><p>Salve os dois links em lugar de fácil acesso.</p></li>
+      </ol></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">O link abre a página de vendas em aba anônima com produto, preço correto e botão de compra funcionando.</p></div>
+      <button class="btn" onclick="done('e8',8)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <!-- E9 -->
+  <div class="card" id="e9">
+    <div class="ch" onclick="tog('e9')">
+      <span class="ci">09</span>
+      <div class="cinfo">
+        <div class="ct">Teste de compra com cupom 100%</div>
+        <div class="cm"><span>Produto · Cupons</span><span>5 min</span><span><span class="bcrit">Crítico</span></span></div>
+      </div>
+      <span class="ca">▾</span>
+    </div>
+    <div class="cb">
+      <div class="why"><div class="wl">Por que importa</div><p class="wt">Esta é a etapa mais importante de toda a configuração. Confirma que o fluxo completo funciona: página → checkout → entrega → e-mails automáticos. Se não testar, você pode estar vendendo com problema sem saber.</p></div>
+      <div class="dgm">
+        <div class="dc"><span class="dd"></span><span class="dl">Fluxo completo do teste</span></div>
+        <div class="db">
+          <div class="dp">
+            <span class="dn a">Criar cupom 100%</span><span class="darr">›</span>
+            <span class="dn a">Comprar</span><span class="darr">›</span>
+            <span class="dn a">Verificar e-mails</span><span class="darr">›</span>
+            <span class="dn a">Acessar produto</span>
+          </div>
+          <div class="ds"></div>
+          <div class="dr"><div class="drl">O que verificar</div><div class="drv gn">E-mail boas-vindas · E-mail entrega · Produto acessível · Bônus disponível</div></div>
+          <div class="dr"><div class="drl">Hotmart Send verificado</div><div class="drv gn">Fluxo de e-mails disparou automaticamente</div></div>
+          <div class="dr"><div class="drl">Se algo falhar</div><div class="drv">Corrija agora — antes de divulgar o link</div></div>
+          <div class="dnote">Use um e-mail diferente do cadastrado como produtor para simular um comprador real.</div>
+        </div>
+      </div>
+      <div class="steps"><div class="slbl">Passo a passo</div><ol>
+        <li><p>Dentro do produto, acesse <strong>Cupons</strong>.</p></li>
+        <li><p>Crie um cupom de 100% de desconto — sugestão: <code>TESTE100</code>.</p></li>
+        <li><p>Abra o link de vendas em aba anônima com um e-mail diferente do seu.</p></li>
+        <li><p>Aplique o cupom <code>TESTE100</code> no checkout e finalize com valor zero.</p></li>
+        <li><p>Verifique se o <strong>e-mail de boas-vindas</strong> chegou.</p></li>
+        <li><p>Verifique se o <strong>e-mail com o acesso ao produto</strong> chegou.</p></li>
+        <li><p>Acesse o produto como comprador — conteúdo e bônus disponíveis.</p></li>
+        <li><p>Se tudo funcionou: desative o cupom de teste.</p></li>
+        <li><p>Se algo falhou: corrija agora, antes de divulgar para qualquer pessoa.</p></li>
+      </ol></div>
+      <div class="tip"><div class="wl">Por que testar com e-mail diferente</div><p class="wt">A Hotmart exibe o produto de forma diferente para produtor e comprador. Usar um segundo e-mail garante que você vê exatamente o que o comprador vai ver — incluindo os e-mails automáticos do Send.</p></div>
+      <div class="suc"><div class="sul">Como saber se funcionou</div><p class="sut">E-mails recebidos, produto acessível, bônus disponível, fluxo do Send disparado. Seu produto está no ar e a automação está funcionando.</p></div>
+      <button class="btn" onclick="done('e9',9)"><span class="bi"></span>Marcar como concluído</button>
+    </div>
+  </div>
+
+  <div class="fin" id="fin">
+    <span class="fk">Configuração concluída</span>
+    <h2 class="fh">Seu produto está<br><em>no ar.</em></h2>
+    <p class="fp">Produto publicado. Página de vendas criada. E-mails automáticos configurados. Link de vendas funcionando. Você saiu do zero para um produto real em 4 dias.</p>
+    <div class="fa"><p><strong>Amanhã é o Dia 5.</strong> A última aula do desafio. Você vai revisar tudo com o checklist de lançamento, aprender como fazer as primeiras vendas e receber o próximo passo para vender com consistência. Guarde o link de vendas.</p></div>
+  </div>
+
+</main>
+
+<footer>Dia 4 · Desafio Produto Pronto · Gabriel Moreira</footer>
+
+<script>
+const T=9,K='dpp-d4v3';
+let S={};try{S=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+function upd(){
+  const n=Object.values(S).filter(Boolean).length;
+  document.getElementById('pf').textContent=n+' / '+T;
+  document.getElementById('pb').style.width=(n/T*100)+'%';
+  for(let i=1;i<=T;i++){const el=document.getElementById('s'+i);if(el)el.className='sc'+(S['e'+i]?' ok':'')}
+}
+function tog(id){
+  const c=document.getElementById(id);if(!c)return;
+  const was=c.classList.contains('open');
+  document.querySelectorAll('.card.open').forEach(x=>x.classList.remove('open','active'));
+  if(!was)c.classList.add('open','active');
+}
+function done(id,n){
+  const c=document.getElementById(id);if(!c)return;
+  S[id]=true;try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
+  c.classList.add('ok');c.classList.remove('open','active');
+  const b=c.querySelector('.btn');
+  if(b){b.className='btn ok';b.innerHTML='<span class="bi"></span>Concluído';b.onclick=null}
+  upd();
+  const nx='e'+(n+1),nc=document.getElementById(nx);
+  if(nc&&!S[nx])setTimeout(()=>{nc.classList.add('open','active');nc.scrollIntoView({behavior:'smooth',block:'start'})},400);
+}
+(function init(){
+  for(let i=1;i<=T;i++){
+    if(S['e'+i]){
+      const c=document.getElementById('e'+i);if(!c)continue;
+      c.classList.add('ok');
+      const b=c.querySelector('.btn');
+      if(b){b.className='btn ok';b.innerHTML='<span class="bi"></span>Concluído';b.onclick=null}
+    }
+  }
+  upd();
+  for(let i=1;i<=T;i++){if(!S['e'+i]){const c=document.getElementById('e'+i);if(c)c.classList.add('open','active');break}}
+})();
+</script>
+</body>
+</html>
