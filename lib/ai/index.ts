@@ -1,9 +1,25 @@
 ﻿import "server-only";
 
-import type { AiProvider, DiscoveryInput, DiscoveryResult, FinalGenerationInput, ProductResult } from "@/types";
-import { generateDiscoveryWithGemini, generateProductWithGemini } from "./gemini";
-import { mockDiscoveryResult, mockProductResult } from "./mock";
-import { generateDiscoveryWithOpenAI, generateProductWithOpenAI } from "./openai";
+import type {
+  AiProvider,
+  DiscoveryInput,
+  DiscoveryResult,
+  FinalGenerationInput,
+  ProductRecommendationInput,
+  ProductRecommendationResult,
+  ProductResult,
+} from "@/types";
+import {
+  generateDiscoveryWithGemini,
+  generateProductRecommendationsWithGemini,
+  generateProductWithGemini,
+} from "./gemini";
+import { mockDiscoveryResult, mockProductRecommendationResult, mockProductResult } from "./mock";
+import {
+  generateDiscoveryWithOpenAI,
+  generateProductRecommendationsWithOpenAI,
+  generateProductWithOpenAI,
+} from "./openai";
 
 export function getAiProvider(): AiProvider {
   const provider = process.env.AI_PROVIDER;
@@ -41,4 +57,20 @@ export async function generateProduct(input: FinalGenerationInput): Promise<Prod
   }
 
   return generateProductWithGemini(input);
+}
+
+export async function generateProductRecommendations(
+  input: ProductRecommendationInput,
+): Promise<ProductRecommendationResult> {
+  const provider = getAiProvider();
+
+  if (!process.env.GEMINI_API_KEY && provider === "gemini") {
+    return mockProductRecommendationResult;
+  }
+
+  if (provider === "openai") {
+    return generateProductRecommendationsWithOpenAI(input);
+  }
+
+  return generateProductRecommendationsWithGemini(input);
 }

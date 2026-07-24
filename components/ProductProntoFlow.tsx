@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
 import { AuthModal, type AuthModalKind } from "@/components/AuthModal";
@@ -12,13 +12,17 @@ import type {
   DiscoveryInput,
   DiscoveryResult,
   FinalGenerationInput,
+  ProductRecommendation,
+  ProductRecommendationInput,
+  ProductRecommendationResult,
   ProductResult,
+  ProductStrategy,
   SavedProductSummary,
 } from "@/types";
 
 type Step = "access" | "dashboard" | "creation" | "loading" | "result" | "savedResult";
-type LoadingMode = "discovery" | "product";
-type DiscoveryStage = "audience" | "pain" | "transformation" | "format";
+type LoadingMode = "strategies" | "recommendations" | "product";
+type RegenerationStage = "strategies" | "products";
 
 type QuestionOption = {
   label: string;
@@ -35,12 +39,6 @@ type OnboardingAnswers = {
   selectedFormat: string;
 };
 
-type CustomAnswers = {
-  audience: string;
-  pain: string;
-  transformation: string;
-};
-
 type ResultBlock = {
   title: string;
   eyebrow: string;
@@ -52,10 +50,7 @@ type ResultBlock = {
   };
 };
 
-const CUSTOM_AUDIENCE = "__custom_audience__";
-const CUSTOM_PAIN = "__custom_pain__";
-const CUSTOM_TRANSFORMATION = "__custom_transformation__";
-const totalOnboardingSteps = 7;
+const totalOnboardingSteps = 5;
 
 const initialAnswers: OnboardingAnswers = {
   profile: "",
@@ -67,32 +62,23 @@ const initialAnswers: OnboardingAnswers = {
   selectedFormat: "",
 };
 
-const initialCustomAnswers: CustomAnswers = {
-  audience: "",
-  pain: "",
-  transformation: "",
-};
-
-const initialRegenerationLimits: Record<DiscoveryStage, number> = {
-  audience: 3,
-  pain: 3,
-  transformation: 3,
-  format: 3,
+const initialRegenerationLimits: Record<RegenerationStage, number> = {
+  strategies: 3,
+  products: 3,
 };
 
 const experienceOptions: QuestionOption[] = [
   { label: "Nunca criei nada", value: "Nunca criei nada" },
-  { label: "Já tentei mas não vendi", value: "Ja tentei mas nao vendi" },
-  { label: "Já vendi e quero melhorar", value: "Ja vendi e quero melhorar" },
+  { label: "JÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ tentei mas nÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o vendi", value: "Ja tentei mas nao vendi" },
+  { label: "JÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ vendi e quero melhorar", value: "Ja vendi e quero melhorar" },
 ];
 
 const loadingPhrases = [
   "Analisando seu conhecimento",
-  "Encontrando o público mais promissor",
-  "Organizando a estratégia",
-  "Montando seu produto",
+  "Organizando a estrategia",
+  "Comparando caminhos possiveis",
+  "Preparando a proxima escolha",
 ];
-
 export function ProductProntoFlow({
   initialAuthModal = null,
 }: {
@@ -102,10 +88,12 @@ export function ProductProntoFlow({
   const [step, setStep] = useState<Step>("access");
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<OnboardingAnswers>(initialAnswers);
-  const [customAnswers, setCustomAnswers] = useState<CustomAnswers>(initialCustomAnswers);
   const [discoveryResult, setDiscoveryResult] = useState<DiscoveryResult | null>(null);
+  const [selectedStrategy, setSelectedStrategy] = useState<ProductStrategy | null>(null);
+  const [productRecommendations, setProductRecommendations] = useState<ProductRecommendationResult | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductRecommendation | null>(null);
   const [regenerationLimits, setRegenerationLimits] = useState(initialRegenerationLimits);
-  const [regeneratingStage, setRegeneratingStage] = useState<DiscoveryStage | null>(null);
+  const [regeneratingStage, setRegeneratingStage] = useState<RegenerationStage | null>(null);
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [loadingMode, setLoadingMode] = useState<LoadingMode>("product");
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
@@ -126,9 +114,11 @@ export function ProductProntoFlow({
 
   const resetCreationFlow = useCallback(() => {
     setAnswers(initialAnswers);
-    setCustomAnswers(initialCustomAnswers);
     setCurrentQuestion(0);
     setDiscoveryResult(null);
+    setSelectedStrategy(null);
+    setProductRecommendations(null);
+    setSelectedProduct(null);
     setRegenerationLimits(initialRegenerationLimits);
     setRegeneratingStage(null);
     setCopiedBlock(null);
@@ -232,8 +222,28 @@ export function ProductProntoFlow({
     setAnswers((current) => ({ ...current, [id]: value }));
   }
 
-  function updateCustomAnswer(id: keyof CustomAnswers, value: string) {
-    setCustomAnswers((current) => ({ ...current, [id]: value }));
+  function selectStrategy(strategy: ProductStrategy) {
+    setSelectedStrategy(strategy);
+    setProductRecommendations(null);
+    setSelectedProduct(null);
+    setAnswers((current) => ({
+      ...current,
+      selectedAudience: strategy.publico,
+      selectedPain: strategy.dor_principal,
+      selectedTransformation: strategy.transformacao,
+      selectedFormat: "",
+    }));
+  }
+
+  function selectProduct(product: ProductRecommendation) {
+    setSelectedProduct(product);
+    setAnswers((current) => ({
+      ...current,
+      selectedAudience: product.publico,
+      selectedPain: product.dor,
+      selectedTransformation: product.transformacao,
+      selectedFormat: product.formato,
+    }));
   }
 
   async function enterExperience(email: string, password: string) {
@@ -298,6 +308,11 @@ export function ProductProntoFlow({
       return;
     }
 
+    if (currentQuestion === 3) {
+      await recommendProducts();
+      return;
+    }
+
     if (currentQuestion === totalOnboardingSteps - 1) {
       await generateFinalProduct();
       return;
@@ -307,7 +322,7 @@ export function ProductProntoFlow({
   }
 
   async function discoverStrategicOptions() {
-    setLoadingMode("discovery");
+    setLoadingMode("strategies");
     setLoadingIndex(0);
     setStep("loading");
 
@@ -320,17 +335,17 @@ export function ProductProntoFlow({
       setCurrentQuestion(2);
       setStep("creation");
     } catch {
-      setFlowError("Não conseguimos gerar sugestões agora. Revise suas respostas e tente novamente.");
+      setFlowError("NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o conseguimos gerar sugestÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµes agora. Revise suas respostas e tente novamente.");
       setStep("creation");
     }
   }
 
-  async function regenerateDiscoveryStage(stage: DiscoveryStage) {
-    if (!discoveryResult || regenerationLimits[stage] <= 0) {
+  async function regenerateStrategies() {
+    if (!discoveryResult || regenerationLimits.strategies <= 0) {
       return;
     }
 
-    setRegeneratingStage(stage);
+    setRegeneratingStage("strategies");
     setFlowError(null);
 
     try {
@@ -338,30 +353,92 @@ export function ProductProntoFlow({
         profile: answers.profile,
         targetAudienceDescription: answers.targetAudienceDescription,
         regeneration: {
-          stage,
-          selectedAudience: resolveCustomValue(answers.selectedAudience, CUSTOM_AUDIENCE, customAnswers.audience),
-          selectedPain: resolveCustomValue(answers.selectedPain, CUSTOM_PAIN, customAnswers.pain),
-          selectedTransformation: resolveCustomValue(
-            answers.selectedTransformation,
-            CUSTOM_TRANSFORMATION,
-            customAnswers.transformation,
-          ),
-          previousSuggestions: getPreviousSuggestionTitles(discoveryResult, stage),
+          previousSuggestions: discoveryResult.estrategias.map((strategy) => strategy.nome),
         },
       });
 
-      setDiscoveryResult((current) => mergeDiscoveryStage(current, result, stage));
+      setDiscoveryResult(result);
+      setSelectedStrategy(null);
+      setAnswers((current) => ({
+        ...current,
+        selectedAudience: "",
+        selectedPain: "",
+        selectedTransformation: "",
+      }));
       setRegenerationLimits((current) => ({
         ...current,
-        [stage]: Math.max(current[stage] - 1, 0),
+        strategies: Math.max(current.strategies - 1, 0),
       }));
     } catch {
-      setFlowError("Não conseguimos gerar novas sugestões agora. Tente novamente em alguns instantes.");
+      setFlowError("Nao conseguimos gerar novas estrategias agora. Tente novamente em alguns instantes.");
     } finally {
       setRegeneratingStage(null);
     }
   }
 
+  async function recommendProducts() {
+    if (!selectedStrategy) {
+      setFlowError("Escolha uma estrategia antes de continuar.");
+      return;
+    }
+
+    setLoadingMode("recommendations");
+    setLoadingIndex(0);
+    setProductRecommendations(null);
+    setSelectedProduct(null);
+    setStep("loading");
+
+    try {
+      const result = await requestProductRecommendations({
+        profile: answers.profile,
+        targetAudienceDescription: answers.targetAudienceDescription,
+        selectedStrategy,
+        experienceLevel: answers.experienceLevel,
+      });
+      setProductRecommendations(result);
+      setCurrentQuestion(4);
+      setStep("creation");
+    } catch {
+      setFlowError("Nao conseguimos gerar recomendacoes agora. Tente novamente em alguns instantes.");
+      setStep("creation");
+    }
+  }
+
+  async function regenerateProductRecommendations() {
+    if (!selectedStrategy || !productRecommendations || regenerationLimits.products <= 0) {
+      return;
+    }
+
+    setRegeneratingStage("products");
+    setFlowError(null);
+
+    try {
+      const result = await requestProductRecommendations({
+        profile: answers.profile,
+        targetAudienceDescription: answers.targetAudienceDescription,
+        selectedStrategy,
+        experienceLevel: answers.experienceLevel,
+        regeneration: {
+          previousSuggestions: productRecommendations.produtos.map((product) => product.nome),
+        },
+      });
+
+      setProductRecommendations(result);
+      setSelectedProduct(null);
+      setAnswers((current) => ({
+        ...current,
+        selectedFormat: "",
+      }));
+      setRegenerationLimits((current) => ({
+        ...current,
+        products: Math.max(current.products - 1, 0),
+      }));
+    } catch {
+      setFlowError("Nao conseguimos gerar novas recomendacoes agora. Tente novamente em alguns instantes.");
+    } finally {
+      setRegeneratingStage(null);
+    }
+  }
   async function generateFinalProduct() {
     setLoadingMode("product");
     setLoadingIndex(0);
@@ -371,14 +448,14 @@ export function ProductProntoFlow({
     setStep("loading");
 
     try {
-      const input = buildFinalGenerationInput(answers, customAnswers);
+      const input = buildFinalGenerationInput(answers, selectedStrategy, selectedProduct);
       const result = await requestProductGeneration(input);
       setGenerationResult(result);
       setActiveResultFormat(input.selectedFormat);
       setStep("result");
       void saveGeneratedProduct(input, result);
     } catch {
-      setFlowError("Não foi possível gerar seu produto agora. Revise suas respostas e tente novamente.");
+      setFlowError("NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o foi possÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­vel gerar seu produto agora. Revise suas respostas e tente novamente.");
       setStep("result");
     }
   }
@@ -389,7 +466,7 @@ export function ProductProntoFlow({
       const products = await requestSavedProducts();
       setSavedProducts(products);
     } catch {
-      setHistoryError("Não foi possível carregar seus produtos criados agora.");
+      setHistoryError("NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o foi possÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­vel carregar seus produtos criados agora.");
     }
   }
 
@@ -403,7 +480,7 @@ export function ProductProntoFlow({
       setPersistenceMessage(
         error instanceof Error
           ? error.message
-          : "Não foi possível salvar este produto automaticamente.",
+          : "NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o foi possÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­vel salvar este produto automaticamente.",
       );
       void refreshSavedProducts();
     }
@@ -421,7 +498,7 @@ export function ProductProntoFlow({
   function startNewProduct() {
     if (savedProducts.length >= 2) {
       setPersistenceMessage(
-        "Você já criou seus 2 produtos disponíveis neste acesso. Para criar outro, exclua um produto antigo ou fale comigo.",
+        "VocÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª jÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ criou seus 2 produtos disponÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­veis neste acesso. Para criar outro, exclua um produto antigo ou fale comigo.",
       );
       return;
     }
@@ -462,7 +539,7 @@ export function ProductProntoFlow({
         setStep("dashboard");
       }
     } catch {
-      setPersistenceMessage("Não foi possível excluir este produto agora.");
+      setPersistenceMessage("NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o foi possÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­vel excluir este produto agora.");
     } finally {
       setDeletingProductId(null);
     }
@@ -570,17 +647,21 @@ export function ProductProntoFlow({
           <OnboardingScreen
             answers={answers}
             currentQuestion={currentQuestion}
-            customAnswers={customAnswers}
             discoveryResult={discoveryResult}
             error={flowError}
             onBack={goBack}
             onForward={goForward}
-            onRegenerate={regenerateDiscoveryStage}
+            onRegenerateProducts={regenerateProductRecommendations}
+            onRegenerateStrategies={regenerateStrategies}
+            onSelectProduct={selectProduct}
+            onSelectStrategy={selectStrategy}
             onUpdateAnswer={updateAnswer}
-            onUpdateCustomAnswer={updateCustomAnswer}
+            productRecommendations={productRecommendations}
             progress={progress}
             regenerationLimits={regenerationLimits}
             regeneratingStage={regeneratingStage}
+            selectedProduct={selectedProduct}
+            selectedStrategy={selectedStrategy}
           />
         )}
         {isAuthenticated && !showAuthentication && step === "loading" && (
@@ -629,7 +710,7 @@ function AppTopBar({
         </div>
         <div className="min-w-0 sm:border-l sm:border-white/10 sm:pl-5">
           <p className="truncate text-xl font-semibold text-[#F7F5EF]">
-            Oi, {userName}! <span aria-hidden="true">👋</span>
+            Oi, {userName}! <span aria-hidden="true">ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¹Ã…â€œÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¹</span>
           </p>
           <p className="mt-1 text-sm leading-5 text-muted">{headerMessage}</p>
         </div>
@@ -660,6 +741,20 @@ async function requestDiscovery(input: DiscoveryInput): Promise<DiscoveryResult>
   if (!response.ok) throw new Error("Discovery failed.");
 
   return response.json() as Promise<DiscoveryResult>;
+}
+
+async function requestProductRecommendations(
+  input: ProductRecommendationInput,
+): Promise<ProductRecommendationResult> {
+  const response = await fetch("/api/recommend-products", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) throw new Error("Product recommendations failed.");
+
+  return response.json() as Promise<ProductRecommendationResult>;
 }
 
 async function requestProductGeneration(input: FinalGenerationInput): Promise<ProductResult> {
@@ -709,7 +804,7 @@ async function requestSaveProduct(
   };
 
   if (!response.ok || !payload.result) {
-    throw new Error(payload.error ?? "Não foi possível salvar este produto automaticamente.");
+    throw new Error(payload.error ?? "NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o foi possÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­vel salvar este produto automaticamente.");
   }
 
   return payload.result;
@@ -784,8 +879,8 @@ function getPdfDownloadFilename(contentDisposition: string, resultId: string) {
 
 function pdfDownloadFallbackMessage() {
   return (
-    "Não foi possível gerar o PDF. " +
-    "Tente novamente. Se o problema continuar, atualize a página."
+    "NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o foi possÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­vel gerar o PDF. " +
+    "Tente novamente. Se o problema continuar, atualize a pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡gina."
   );
 }
 function hasRecoveryUrlMarker() {
@@ -880,7 +975,7 @@ function getProfileMetadataName(metadata: Record<string, unknown>) {
 
 function toReadableName(value: string) {
   const [firstName = ""] = value.trim().split(/\s+/);
-  const cleanName = firstName.replace(/[^a-zA-ZÀ-ÿ]/g, "");
+  const cleanName = firstName.replace(/[^a-zA-ZÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬-ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿]/g, "");
 
   if (!cleanName) return "Criador";
 
@@ -889,56 +984,27 @@ function toReadableName(value: string) {
 
 function getDashboardHeaderMessage(createdCount: number) {
   if (createdCount <= 0) return "Vamos criar seu primeiro produto digital.";
-  if (createdCount === 1) return "Seu primeiro produto está pronto. Vamos continuar.";
-  return "Seus dois produtos estão disponíveis.";
+  if (createdCount === 1) return "Seu primeiro produto estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ pronto. Vamos continuar.";
+  return "Seus dois produtos estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o disponÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­veis.";
 }
 
 function buildFinalGenerationInput(
   answers: OnboardingAnswers,
-  customAnswers: CustomAnswers,
+  selectedStrategy: ProductStrategy | null,
+  selectedProduct: ProductRecommendation | null,
 ): FinalGenerationInput {
   return {
     profile: answers.profile,
     targetAudienceDescription: answers.targetAudienceDescription,
-    selectedAudience: resolveCustomValue(answers.selectedAudience, CUSTOM_AUDIENCE, customAnswers.audience),
-    selectedPain: resolveCustomValue(answers.selectedPain, CUSTOM_PAIN, customAnswers.pain),
-    selectedTransformation: resolveCustomValue(
-      answers.selectedTransformation,
-      CUSTOM_TRANSFORMATION,
-      customAnswers.transformation,
-    ),
+    selectedAudience: selectedProduct?.publico ?? selectedStrategy?.publico ?? answers.selectedAudience,
+    selectedPain: selectedProduct?.dor ?? selectedStrategy?.dor_principal ?? answers.selectedPain,
+    selectedTransformation: selectedProduct?.transformacao ?? selectedStrategy?.transformacao ?? answers.selectedTransformation,
     experienceLevel: answers.experienceLevel,
-    selectedFormat: answers.selectedFormat,
+    selectedFormat: selectedProduct?.formato ?? answers.selectedFormat,
+    selectedStrategy: selectedStrategy ?? undefined,
+    selectedProduct: selectedProduct ?? undefined,
   };
 }
-
-function resolveCustomValue(value: string, marker: string, customValue: string) {
-  return value === marker ? customValue.trim() : value;
-}
-
-function getPreviousSuggestionTitles(result: DiscoveryResult, stage: DiscoveryStage) {
-  if (stage === "audience") return result.publicos.map((item) => item.titulo);
-  if (stage === "pain") return result.dores.map((item) => item.titulo);
-  if (stage === "transformation") return result.transformacoes.map((item) => item.titulo);
-  return result.formatos.map((item) => item.nome || item.titulo);
-}
-
-function mergeDiscoveryStage(
-  current: DiscoveryResult | null,
-  next: DiscoveryResult,
-  stage: DiscoveryStage,
-): DiscoveryResult {
-  if (!current) return next;
-
-  return {
-    ...current,
-    ...(stage === "audience" ? { publicos: next.publicos } : {}),
-    ...(stage === "pain" ? { dores: next.dores } : {}),
-    ...(stage === "transformation" ? { transformacoes: next.transformacoes } : {}),
-    ...(stage === "format" ? { formatos: next.formatos } : {}),
-  };
-}
-
 function AccessScreen({
   authModal,
   error,
@@ -1129,33 +1195,41 @@ function AccessScreen({
 function OnboardingScreen({
   answers,
   currentQuestion,
-  customAnswers,
   discoveryResult,
   error,
   onBack,
   onForward,
-  onRegenerate,
+  onRegenerateProducts,
+  onRegenerateStrategies,
+  onSelectProduct,
+  onSelectStrategy,
   onUpdateAnswer,
-  onUpdateCustomAnswer,
+  productRecommendations,
   progress,
   regenerationLimits,
   regeneratingStage,
+  selectedProduct,
+  selectedStrategy,
 }: {
   answers: OnboardingAnswers;
   currentQuestion: number;
-  customAnswers: CustomAnswers;
   discoveryResult: DiscoveryResult | null;
   error: string | null;
   onBack: () => void;
   onForward: () => void;
-  onRegenerate: (stage: DiscoveryStage) => Promise<void>;
+  onRegenerateProducts: () => Promise<void>;
+  onRegenerateStrategies: () => Promise<void>;
+  onSelectProduct: (product: ProductRecommendation) => void;
+  onSelectStrategy: (strategy: ProductStrategy) => void;
   onUpdateAnswer: (id: keyof OnboardingAnswers, value: string) => void;
-  onUpdateCustomAnswer: (id: keyof CustomAnswers, value: string) => void;
+  productRecommendations: ProductRecommendationResult | null;
   progress: number;
-  regenerationLimits: Record<DiscoveryStage, number>;
-  regeneratingStage: DiscoveryStage | null;
+  regenerationLimits: Record<RegenerationStage, number>;
+  regeneratingStage: RegenerationStage | null;
+  selectedProduct: ProductRecommendation | null;
+  selectedStrategy: ProductStrategy | null;
 }) {
-  const canContinue = canContinueFromStep(currentQuestion, answers, customAnswers);
+  const canContinue = canContinueFromStep(currentQuestion, answers, selectedStrategy, selectedProduct);
 
   return (
     <section className="w-full pb-10">
@@ -1188,13 +1262,17 @@ function OnboardingScreen({
         {renderOnboardingStep({
           answers,
           currentQuestion,
-          customAnswers,
           discoveryResult,
-          onRegenerate,
+          onRegenerateProducts,
+          onRegenerateStrategies,
+          onSelectProduct,
+          onSelectStrategy,
           onUpdateAnswer,
-          onUpdateCustomAnswer,
+          productRecommendations,
           regenerationLimits,
           regeneratingStage,
+          selectedProduct,
+          selectedStrategy,
         })}
 
         {error ? (
@@ -1228,30 +1306,38 @@ function OnboardingScreen({
 function renderOnboardingStep({
   answers,
   currentQuestion,
-  customAnswers,
   discoveryResult,
-  onRegenerate,
+  onRegenerateProducts,
+  onRegenerateStrategies,
+  onSelectProduct,
+  onSelectStrategy,
   onUpdateAnswer,
-  onUpdateCustomAnswer,
+  productRecommendations,
   regenerationLimits,
   regeneratingStage,
+  selectedProduct,
+  selectedStrategy,
 }: {
   answers: OnboardingAnswers;
   currentQuestion: number;
-  customAnswers: CustomAnswers;
   discoveryResult: DiscoveryResult | null;
-  onRegenerate: (stage: DiscoveryStage) => Promise<void>;
+  onRegenerateProducts: () => Promise<void>;
+  onRegenerateStrategies: () => Promise<void>;
+  onSelectProduct: (product: ProductRecommendation) => void;
+  onSelectStrategy: (strategy: ProductStrategy) => void;
   onUpdateAnswer: (id: keyof OnboardingAnswers, value: string) => void;
-  onUpdateCustomAnswer: (id: keyof CustomAnswers, value: string) => void;
-  regenerationLimits: Record<DiscoveryStage, number>;
-  regeneratingStage: DiscoveryStage | null;
+  productRecommendations: ProductRecommendationResult | null;
+  regenerationLimits: Record<RegenerationStage, number>;
+  regeneratingStage: RegenerationStage | null;
+  selectedProduct: ProductRecommendation | null;
+  selectedStrategy: ProductStrategy | null;
 }) {
   if (currentQuestion === 0) {
     return (
       <TextStep
-        helper="Quanto mais detalhes você der, melhor a IA vai transformar seu conhecimento em um produto."
+        helper="Quanto mais detalhes voce der, melhor a IA vai transformar seu conhecimento em um produto."
         onChange={(value) => onUpdateAnswer("profile", value)}
-        title="Quem é você, qual sua profissão, o que você faz bem e o que gostaria de ensinar?"
+        title="Quem e voce, qual sua profissao, o que voce faz bem e o que gostaria de ensinar?"
         value={answers.profile}
       />
     );
@@ -1260,9 +1346,9 @@ function renderOnboardingStep({
   if (currentQuestion === 1) {
     return (
       <TextStep
-        helper="Pode descrever uma pessoa, um grupo, uma situação ou um tipo de cliente."
+        helper="Pode descrever uma pessoa, um grupo, uma situacao ou um tipo de cliente."
         onChange={(value) => onUpdateAnswer("targetAudienceDescription", value)}
-        title="Quem você gostaria de ajudar ou transformar com seu conhecimento?"
+        title="Quem voce gostaria de ajudar ou transformar com seu conhecimento?"
         value={answers.targetAudienceDescription}
       />
     );
@@ -1270,118 +1356,37 @@ function renderOnboardingStep({
 
   if (currentQuestion === 2) {
     return (
-      <CardStep
-        customLabel="Escrever meu próprio público"
-        customPlaceholder="Descreva seu público com suas palavras"
-        customValue={customAnswers.audience}
-        helper="Escolha o caminho com mais potencial para o seu produto."
-        items={(discoveryResult?.publicos ?? []).map((item) => ({
-          title: item.titulo,
-          description: item.descricao,
-          why: item.porque,
-          tradeoff: item.tradeoff,
-          value: item.titulo,
-        }))}
-        marker={CUSTOM_AUDIENCE}
-        onChange={(value) => onUpdateAnswer("selectedAudience", value)}
-        onCustomChange={(value) => onUpdateCustomAnswer("audience", value)}
-        onRegenerate={() => onRegenerate("audience")}
-        regenerationRemaining={regenerationLimits.audience}
-        regenerating={regeneratingStage === "audience"}
-        selectedValue={answers.selectedAudience}
-        title="Escolha seu melhor público"
+      <StrategyStep
+        onRegenerate={onRegenerateStrategies}
+        onSelect={onSelectStrategy}
+        regenerationRemaining={regenerationLimits.strategies}
+        regenerating={regeneratingStage === "strategies"}
+        selectedStrategy={selectedStrategy}
+        strategies={discoveryResult?.estrategias ?? []}
       />
     );
   }
 
   if (currentQuestion === 3) {
     return (
-      <CardStep
-        customLabel="Escrever minha própria dor"
-        customPlaceholder="Descreva a dor principal"
-        customValue={customAnswers.pain}
-        helper="A dor certa deixa a promessa do produto mais clara e desejada."
-        items={(discoveryResult?.dores ?? []).map((item) => ({
-          title: item.titulo,
-          description: `${item.descricao} Frase real: "${item.frases_reais[0]}"`,
-          why: item.porque,
-          tradeoff: item.tradeoff,
-          value: item.titulo,
-        }))}
-        marker={CUSTOM_PAIN}
-        onChange={(value) => onUpdateAnswer("selectedPain", value)}
-        onCustomChange={(value) => onUpdateCustomAnswer("pain", value)}
-        onRegenerate={() => onRegenerate("pain")}
-        regenerationRemaining={regenerationLimits.pain}
-        regenerating={regeneratingStage === "pain"}
-        selectedValue={answers.selectedPain}
-        title="Escolha a dor principal"
-      />
-    );
-  }
-
-  if (currentQuestion === 4) {
-    return (
-      <CardStep
-        customLabel="Escrever minha própria transformação"
-        customPlaceholder="Descreva a transformação desejada"
-        customValue={customAnswers.transformation}
-        helper="Escolha o resultado que seu aluno mais gostaria de conquistar."
-        items={(discoveryResult?.transformacoes ?? []).map((item) => ({
-          title: item.titulo,
-          description: item.descricao,
-          why: item.porque,
-          tradeoff: item.tradeoff,
-          value: item.titulo,
-        }))}
-        marker={CUSTOM_TRANSFORMATION}
-        onChange={(value) => onUpdateAnswer("selectedTransformation", value)}
-        onCustomChange={(value) => onUpdateCustomAnswer("transformation", value)}
-        onRegenerate={() => onRegenerate("transformation")}
-        regenerationRemaining={regenerationLimits.transformation}
-        regenerating={regeneratingStage === "transformation"}
-        selectedValue={answers.selectedTransformation}
-        title="Escolha a transformação"
-      />
-    );
-  }
-
-  if (currentQuestion === 5) {
-    return (
       <OptionsStep
-        helper="Isso ajuda a ajustar a complexidade da recomendação."
+        helper="Isso ajuda a ajustar a complexidade da recomendacao."
         onChange={(value) => onUpdateAnswer("experienceLevel", value)}
         options={experienceOptions}
-        title="Você já criou algum produto digital antes?"
+        title="Qual seu nivel de experiencia?"
         value={answers.experienceLevel}
       />
     );
   }
 
   return (
-    <CardStep
-      helper="Analisando seu conhecimento e seu objetivo, estes são os formatos com melhor encaixe para começar rápido sem perder estratégia."
-      items={(discoveryResult?.formatos ?? []).map((item) => ({
-        title: formatProductFormatLabel(item.nome, item.nome || item.titulo),
-        description: item.descricao,
-        why: item.porque,
-        tradeoff: item.tradeoff,
-        meta: [
-          `Tempo estimado: ${item.tempo_medio}`,
-          `Dificuldade: ${item.dificuldade}`,
-          `Ticket: ${item.ticket_recomendado}`,
-          `Ideal para: ${item.perfil_ideal}`,
-          `Potencial de escala: ${item.potencial_escala}`,
-          `${"★".repeat(Math.max(1, Math.min(item.avaliacao, 5)))}${"☆".repeat(Math.max(0, 5 - Math.min(item.avaliacao, 5)))}`,
-        ],
-        value: item.nome,
-      }))}
-      onChange={(value) => onUpdateAnswer("selectedFormat", value)}
-      onRegenerate={() => onRegenerate("format")}
-      regenerationRemaining={regenerationLimits.format}
-      regenerating={regeneratingStage === "format"}
-      selectedValue={answers.selectedFormat}
-      title="Escolha o formato recomendado"
+    <ProductRecommendationsStep
+      onRegenerate={onRegenerateProducts}
+      onSelect={onSelectProduct}
+      products={productRecommendations?.produtos ?? []}
+      regenerationRemaining={regenerationLimits.products}
+      regenerating={regeneratingStage === "products"}
+      selectedProduct={selectedProduct}
     />
   );
 }
@@ -1389,25 +1394,19 @@ function renderOnboardingStep({
 function canContinueFromStep(
   stepIndex: number,
   answers: OnboardingAnswers,
-  customAnswers: CustomAnswers,
+  selectedStrategy: ProductStrategy | null,
+  selectedProduct: ProductRecommendation | null,
 ) {
   const valueByStep: Record<number, string> = {
     0: answers.profile,
     1: answers.targetAudienceDescription,
-    2: resolveCustomValue(answers.selectedAudience, CUSTOM_AUDIENCE, customAnswers.audience),
-    3: resolveCustomValue(answers.selectedPain, CUSTOM_PAIN, customAnswers.pain),
-    4: resolveCustomValue(
-      answers.selectedTransformation,
-      CUSTOM_TRANSFORMATION,
-      customAnswers.transformation,
-    ),
-    5: answers.experienceLevel,
-    6: answers.selectedFormat,
+    2: selectedStrategy?.nome ?? "",
+    3: answers.experienceLevel,
+    4: selectedProduct?.nome ?? "",
   };
 
   return (valueByStep[stepIndex] ?? "").trim().length > 0;
 }
-
 function TextStep({
   helper,
   onChange,
@@ -1455,185 +1454,360 @@ function OptionsStep({
   );
 }
 
-function CardStep({
-  customLabel,
-  customPlaceholder,
-  customValue,
-  helper,
-  items,
-  marker,
-  onChange,
-  onCustomChange,
+function StrategyStep({
   onRegenerate,
+  onSelect,
   regenerationRemaining,
-  regenerating = false,
-  selectedValue,
-  title,
+  regenerating,
+  selectedStrategy,
+  strategies,
 }: {
-  customLabel?: string;
-  customPlaceholder?: string;
-  customValue?: string;
-  helper: string;
-  items: Array<{
-    title: string;
-    description: string;
-    value: string;
-    why: string;
-    tradeoff: string;
-    meta?: string[];
-  }>;
-  marker?: string;
-  onChange: (value: string) => void;
-  onCustomChange?: (value: string) => void;
-  onRegenerate?: () => Promise<void>;
-  regenerationRemaining?: number;
-  regenerating?: boolean;
-  selectedValue: string;
-  title: string;
+  onRegenerate: () => Promise<void>;
+  onSelect: (strategy: ProductStrategy) => void;
+  regenerationRemaining: number;
+  regenerating: boolean;
+  selectedStrategy: ProductStrategy | null;
+  strategies: readonly ProductStrategy[];
 }) {
   return (
     <div>
-      <h2 className="max-w-3xl text-3xl font-semibold leading-tight text-ink">{title}</h2>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#66635B]">{helper}</p>
-      <div className="mt-7 grid gap-4 lg:grid-cols-2">
-        {items.map((item) => (
-          <ChoiceCard
-            description={item.description}
-            featured={items.indexOf(item) === 0}
-            key={item.value}
-            meta={item.meta}
-            onClick={() => onChange(item.value)}
-            tradeoff={item.tradeoff}
-            selected={selectedValue === item.value}
-            title={item.title}
-            why={item.why}
+      <h2 className="max-w-3xl text-3xl font-semibold leading-tight text-ink">
+        Escolha uma estrategia
+      </h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#66635B]">
+        A IA encontrou tres caminhos completos. Veja o resumo no card e abra os detalhes antes de escolher.
+      </p>
+      <div className="mt-7 grid gap-4 lg:grid-cols-3">
+        {strategies.map((strategy) => (
+          <StrategyCard
+            key={strategy.nome}
+            onSelect={onSelect}
+            selected={selectedStrategy?.nome === strategy.nome}
+            strategy={strategy}
           />
         ))}
-
-        {customLabel && marker ? (
-          <div className="space-y-3">
-            <ChoiceCard
-              description="Use esta opção se nenhuma sugestão representar bem o que você quer criar."
-              featured={false}
-              onClick={() => onChange(marker)}
-              selected={selectedValue === marker}
-              title={customLabel}
-              tradeoff="Você ganha controle, mas perde a análise comparativa da IA sobre os caminhos mais fáceis de vender."
-              why="Esta opção é útil quando você já conhece muito bem o público que quer atender."
-            />
-            {selectedValue === marker ? (
-              <textarea
-                className="min-h-32 w-full resize-none rounded-[22px] border border-black/10 bg-white px-5 py-4 text-sm leading-6 text-ink outline-none transition placeholder:text-[#8B877C] focus:border-[#8B7334] focus:ring-4 focus:ring-accent/15"
-                onChange={(event) => onCustomChange?.(event.target.value)}
-                placeholder={customPlaceholder}
-                value={customValue ?? ""}
-              />
-            ) : null}
-          </div>
-        ) : null}
       </div>
-      {onRegenerate && regenerationRemaining !== undefined ? (
-        <div className="mt-6 rounded-[22px] border border-black/10 bg-white px-4 py-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-ink">Novas sugestões</p>
-              <div className="mt-2 flex gap-2" aria-label={`${regenerationRemaining} regenerações restantes`}>
-                {[0, 1, 2].map((index) => (
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      index < regenerationRemaining ? "bg-accent" : "bg-black/15"
-                    }`}
-                    key={index}
-                  />
-                ))}
-              </div>
-              {regenerationRemaining === 0 ? (
-                <p className="mt-2 text-sm leading-5 text-[#66635B]">
-                  Você atingiu o limite de novas sugestões desta etapa.
-                </p>
-              ) : null}
-            </div>
-            <button
-              className="h-11 rounded-full border border-black/12 px-5 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={regenerationRemaining === 0 || regenerating}
-              onClick={() => void onRegenerate()}
-              type="button"
-            >
-              {regenerating ? "Gerando..." : "Gerar novas sugestões"}
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <RegeneratePanel
+        label="Gerar novas sugestoes"
+        onRegenerate={onRegenerate}
+        regenerationRemaining={regenerationRemaining}
+        regenerating={regenerating}
+      />
     </div>
   );
 }
 
-function ChoiceCard({
-  description,
-  featured = false,
-  meta,
-  onClick,
+function StrategyCard({
+  onSelect,
   selected,
-  title,
-  tradeoff,
-  why,
+  strategy,
 }: {
-  description: string;
-  featured?: boolean;
-  meta?: string[];
-  onClick: () => void;
+  onSelect: (strategy: ProductStrategy) => void;
   selected: boolean;
-  title: string;
-  tradeoff: string;
-  why: string;
+  strategy: ProductStrategy;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <article
+        className={`flex min-h-[260px] flex-col rounded-[24px] border p-5 text-left transition ${
+          selected
+            ? "border-accent bg-[#FBF5DE] shadow-md shadow-accent/10"
+            : strategy.recomendada
+              ? "border-accent bg-white shadow-lg shadow-accent/10"
+              : "border-black/10 bg-white"
+        }`}
+      >
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {strategy.recomendada ? (
+            <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-[#0D0D0D]">
+              Recomendada
+            </span>
+          ) : null}
+          {selected ? (
+            <span className="rounded-full border border-accent/30 px-3 py-1 text-xs font-semibold text-[#8B7334]">
+              Escolhida
+            </span>
+          ) : null}
+        </div>
+        <h3 className="text-lg font-semibold leading-tight text-ink">{strategy.nome}</h3>
+        <p className="mt-3 flex-1 text-sm leading-6 text-[#66635B]">{strategy.resumo}</p>
+        <button
+          className="mt-5 h-11 w-full rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C]"
+          onClick={() => setIsOpen(true)}
+          type="button"
+        >
+          Ver estrategia completa
+        </button>
+      </article>
+      {isOpen ? (
+        <StrategyModal
+          onClose={() => setIsOpen(false)}
+          onSelect={() => {
+            onSelect(strategy);
+            setIsOpen(false);
+          }}
+          strategy={strategy}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function StrategyModal({
+  onClose,
+  onSelect,
+  strategy,
+}: {
+  onClose: () => void;
+  onSelect: () => void;
+  strategy: ProductStrategy;
 }) {
   return (
-    <article
-      className={`rounded-[24px] border p-5 text-left transition ${
-        selected
-          ? "border-accent bg-[#FBF5DE] text-ink shadow-md shadow-accent/10"
-          : featured
-            ? "border-accent bg-white text-[#56534D] shadow-lg shadow-accent/10"
-            : "border-black/10 bg-white text-[#56534D]"
-      }`}
-    >
-      {featured ? (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-[#0D0D0D]">
-            Minha recomendação
-          </span>
-          <span className="rounded-full border border-accent/30 px-3 py-1 text-xs font-semibold text-[#8B7334]">
-            Mais recomendada
-          </span>
-        </div>
-      ) : null}
-      <h3 className="text-base font-semibold text-ink">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-[#66635B]">{description}</p>
-      <div className="mt-4 grid gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8B7334]">Por que escolhi</p>
-          <p className="mt-1 text-sm leading-6 text-[#56534D]">{why}</p>
-        </div>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8B7334]">Trade-off</p>
-          <p className="mt-1 text-sm leading-6 text-[#56534D]">{tradeoff}</p>
-        </div>
-      </div>
-      {meta?.length ? (
-        <ul className="mt-4 grid gap-2 text-sm leading-5 text-[#56534D]">
-          {meta.map((item) => (
-            <li className="rounded-2xl bg-[#F3F1EB] px-3 py-2" key={item}>{item}</li>
-          ))}
-        </ul>
-      ) : null}
+    <DetailModal onClose={onClose} title={strategy.nome}>
+      <DetailItem label="Publico" value={strategy.publico} />
+      <DetailItem label="Dor" value={strategy.dor_principal} />
+      <DetailItem label="Transformacao" value={strategy.transformacao} />
+      <DetailItem label="Por que recomendamos" value={strategy.justificativa} />
+      <DetailItem label="Trade-offs" value={strategy.tradeoffs} />
       <button
-        className="mt-5 h-11 w-full rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C]"
-        onClick={onClick}
+        className="mt-6 h-12 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
+        onClick={onSelect}
         type="button"
       >
-        Escolher esta opção
+        Escolher esta estrategia
       </button>
-    </article>
+    </DetailModal>
+  );
+}
+
+function ProductRecommendationsStep({
+  onRegenerate,
+  onSelect,
+  products,
+  regenerationRemaining,
+  regenerating,
+  selectedProduct,
+}: {
+  onRegenerate: () => Promise<void>;
+  onSelect: (product: ProductRecommendation) => void;
+  products: readonly ProductRecommendation[];
+  regenerationRemaining: number;
+  regenerating: boolean;
+  selectedProduct: ProductRecommendation | null;
+}) {
+  return (
+    <div>
+      <h2 className="max-w-3xl text-3xl font-semibold leading-tight text-ink">
+        Escolha o produto recomendado
+      </h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-[#66635B]">
+        Estes dois produtos nasceram da estrategia escolhida e do seu nivel de experiencia.
+      </p>
+      <div className="mt-7 grid gap-4 lg:grid-cols-2">
+        {products.map((product) => (
+          <ProductRecommendationCard
+            key={product.nome}
+            onSelect={onSelect}
+            product={product}
+            selected={selectedProduct?.nome === product.nome}
+          />
+        ))}
+      </div>
+      <RegeneratePanel
+        label="Gerar novas sugestoes"
+        onRegenerate={onRegenerate}
+        regenerationRemaining={regenerationRemaining}
+        regenerating={regenerating}
+      />
+    </div>
+  );
+}
+
+function ProductRecommendationCard({
+  onSelect,
+  product,
+  selected,
+}: {
+  onSelect: (product: ProductRecommendation) => void;
+  product: ProductRecommendation;
+  selected: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      <article
+        className={`flex min-h-[320px] flex-col rounded-[24px] border p-5 text-left transition ${
+          selected
+            ? "border-accent bg-[#FBF5DE] shadow-md shadow-accent/10"
+            : "border-black/10 bg-white"
+        }`}
+      >
+        {selected ? (
+          <span className="mb-4 w-fit rounded-full border border-accent/30 px-3 py-1 text-xs font-semibold text-[#8B7334]">
+            Escolhido
+          </span>
+        ) : null}
+        <h3 className="text-lg font-semibold leading-tight text-ink">{product.nome}</h3>
+        <div className="mt-4 grid gap-2 text-sm text-[#56534D]">
+          <span className="rounded-2xl bg-[#F3F1EB] px-3 py-2">Formato: {formatProductFormatLabel(product.formato, product.formato)}</span>
+          <span className="rounded-2xl bg-[#F3F1EB] px-3 py-2">Ticket: {product.ticket}</span>
+          <span className="rounded-2xl bg-[#F3F1EB] px-3 py-2">Tempo: {product.tempo_para_criar}</span>
+          <span className="rounded-2xl bg-[#F3F1EB] px-3 py-2">Dificuldade: {product.dificuldade}</span>
+        </div>
+        <p className="mt-4 flex-1 text-sm leading-6 text-[#66635B]">{product.resumo}</p>
+        <button
+          className="mt-5 h-11 w-full rounded-full bg-ink px-4 text-sm font-semibold text-[#F7F5EF] transition hover:bg-[#2C2C2C]"
+          onClick={() => setIsOpen(true)}
+          type="button"
+        >
+          Ver detalhes
+        </button>
+      </article>
+      {isOpen ? (
+        <ProductRecommendationModal
+          onClose={() => setIsOpen(false)}
+          onSelect={() => {
+            onSelect(product);
+            setIsOpen(false);
+          }}
+          product={product}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ProductRecommendationModal({
+  onClose,
+  onSelect,
+  product,
+}: {
+  onClose: () => void;
+  onSelect: () => void;
+  product: ProductRecommendation;
+}) {
+  return (
+    <DetailModal onClose={onClose} title={product.nome}>
+      <DetailItem label="Big Idea" value={product.big_idea} />
+      <DetailItem label="Promessa" value={product.promessa} />
+      <DetailItem label="Publico" value={product.publico} />
+      <DetailItem label="Dor" value={product.dor} />
+      <DetailItem label="Transformacao" value={product.transformacao} />
+      <DetailItem label="Formato" value={formatProductFormatLabel(product.formato, product.formato)} />
+      <DetailItem label="Estrutura" value={product.estrutura} />
+      <DetailListBlock label="Modulos" values={product.modulos} />
+      <DetailItem label="Oferta" value={product.oferta} />
+      <DetailItem label="Ticket" value={product.ticket} />
+      <DetailItem label="Tempo para criar" value={product.tempo_para_criar} />
+      <DetailItem label="Justificativa" value={product.justificativa} />
+      <DetailListBlock label="Primeiros passos" values={product.primeiros_passos} />
+      <button
+        className="mt-6 h-12 w-full rounded-2xl bg-accent px-5 text-sm font-bold text-[#0D0D0D] transition hover:bg-accent-light"
+        onClick={onSelect}
+        type="button"
+      >
+        Escolher este produto
+      </button>
+    </DetailModal>
+  );
+}
+
+function DetailModal({
+  children,
+  onClose,
+  title,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+  title: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-paper p-5 text-ink shadow-2xl shadow-black/40 sm:p-8">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-2xl font-semibold leading-tight text-ink">{title}</h3>
+          <button
+            aria-label="Fechar"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-black/10 text-xl text-ink transition hover:border-[#8B7334] hover:text-[#8B7334]"
+            onClick={onClose}
+            type="button"
+          >
+            x
+          </button>
+        </div>
+        <div className="mt-6 grid gap-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <section className="rounded-[18px] bg-white p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8B7334]">{label}</p>
+      <p className="mt-2 text-sm leading-6 text-[#56534D]">{value}</p>
+    </section>
+  );
+}
+
+function DetailListBlock({ label, values }: { label: string; values: string[] }) {
+  return (
+    <section className="rounded-[18px] bg-white p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#8B7334]">{label}</p>
+      <ul className="mt-2 grid gap-2 text-sm leading-6 text-[#56534D]">
+        {values.map((value) => (
+          <li key={value}>{value}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RegeneratePanel({
+  label,
+  onRegenerate,
+  regenerationRemaining,
+  regenerating,
+}: {
+  label: string;
+  onRegenerate: () => Promise<void>;
+  regenerationRemaining: number;
+  regenerating: boolean;
+}) {
+  return (
+    <div className="mt-6 rounded-[22px] border border-black/10 bg-white px-4 py-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-ink">Novas sugestoes</p>
+          <div className="mt-2 flex gap-2" aria-label={`${regenerationRemaining} regeneracoes restantes`}>
+            {[0, 1, 2].map((index) => (
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${
+                  index < regenerationRemaining ? "bg-accent" : "bg-black/15"
+                }`}
+                key={index}
+              />
+            ))}
+          </div>
+          {regenerationRemaining === 0 ? (
+            <p className="mt-2 text-sm leading-5 text-[#66635B]">
+              Voce atingiu o limite de novas sugestoes desta etapa.
+            </p>
+          ) : null}
+        </div>
+        <button
+          className="h-11 rounded-full border border-black/12 px-5 text-sm font-semibold text-ink transition hover:border-[#8B7334] hover:text-[#8B7334] disabled:cursor-not-allowed disabled:opacity-45"
+          disabled={regenerationRemaining === 0 || regenerating}
+          onClick={() => void onRegenerate()}
+          type="button"
+        >
+          {regenerating ? "Gerando..." : label}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -1671,23 +1845,20 @@ function OptionQuestion({
 }
 
 function LoadingScreen({ mode, phrase }: { mode: LoadingMode; phrase: string }) {
+  const titleByMode: Record<LoadingMode, string> = {
+    product: "Criando seu produto",
+    recommendations: "Recomendando produtos",
+    strategies: "Encontrando seus melhores caminhos",
+  };
+
   return (
     <section className="flex min-h-[64vh] w-full items-center justify-center pb-10 text-center">
       <div className="w-full max-w-2xl rounded-[36px] border border-white/8 bg-surface p-8 shadow-2xl shadow-black/30 sm:p-12">
-        <div className="flex justify-center">
-          <BrandLogo size="lg" variant="light" />
-        </div>
-        <div className="mx-auto mt-10 flex h-24 w-24 items-center justify-center rounded-[28px] border border-accent/20 bg-surface-2 shadow-xl shadow-black/20">
-          <Image
-            alt=""
-            className="brand-loading-glow h-16 w-16 object-contain"
-            height={1024}
-            src="/brand/loading-icon.png"
-            width={1536}
-          />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-accent/20">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-accent/20 border-t-accent" />
         </div>
         <h2 className="mt-8 text-3xl font-semibold text-[#F7F5EF]">
-          {mode === "discovery" ? "Encontrando seus melhores caminhos" : "Criando seu produto"}
+          {titleByMode[mode]}
         </h2>
         <p className="mt-4 min-h-6 text-sm text-muted">{phrase}</p>
       </div>
@@ -1820,13 +1991,13 @@ function ProductsDashboard({
         <MetricCard
           helper={products.length > 0 ? "Produto mais recente" : "Crie seu primeiro produto"}
           icon="format"
-          label="Último formato usado"
+          label="ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ltimo formato usado"
           value={lastFormat}
         />
         <MetricCard
           helper={lastProductHelper}
           icon="product"
-          label="Último produto"
+          label="ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ltimo produto"
           value={lastProductName}
         />
       </div>
@@ -1845,7 +2016,7 @@ function ProductsDashboard({
 
       {reachedLimit ? (
         <p className="mb-4 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-5 text-[#F7F5EF]">
-          Você já criou seus 2 produtos disponíveis neste acesso. Para criar outro, exclua um produto antigo.
+          VocÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª jÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ criou seus 2 produtos disponÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­veis neste acesso. Para criar outro, exclua um produto antigo.
         </p>
       ) : null}
 
@@ -1863,7 +2034,7 @@ function ProductsDashboard({
             </h2>
           </div>
           <p className="max-w-sm text-sm leading-6 text-[#66635B]">
-            Visualize, baixe ou exclua uma estratégia salva.
+            Visualize, baixe ou exclua uma estratÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©gia salva.
           </p>
         </div>
 
@@ -1929,10 +2100,10 @@ function ProductsDashboard({
               <BoxIcon />
             </div>
             <h3 className="mt-4 text-2xl font-semibold text-ink">
-              Você ainda não criou nenhum produto.
+              VocÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª ainda nÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o criou nenhum produto.
             </h3>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#66635B]">
-              Comece agora e receba sua estratégia personalizada.
+              Comece agora e receba sua estratÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©gia personalizada.
             </p>
             <button
               className="mt-6 inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#E5CB78_0%,#C9A84C_58%,#B98C2D_100%)] px-7 text-sm font-bold text-[#0D0D0D] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(201,168,76,.22)]"
@@ -1953,9 +2124,9 @@ function getDashboardHeroCopy(createdCount: number) {
   if (createdCount <= 0) {
     return {
       title: "Seus produtos digitais",
-      highlight: "em construção.",
+      highlight: "em construÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o.",
       description:
-        "Responda algumas perguntas e receba uma estratégia completa para validar e vender sua ideia.",
+        "Responda algumas perguntas e receba uma estratÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©gia completa para validar e vender sua ideia.",
       buttonLabel: "Criar meu primeiro produto",
     };
   }
@@ -1963,15 +2134,15 @@ function getDashboardHeroCopy(createdCount: number) {
   if (createdCount === 1) {
     return {
       title: "Seu primeiro produto",
-      highlight: "já está pronto.",
-      description: "Você pode abrir o produto criado ou começar um segundo produto.",
+      highlight: "jÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ pronto.",
+      description: "VocÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª pode abrir o produto criado ou comeÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ar um segundo produto.",
       buttonLabel: "Criar segundo produto",
     };
   }
 
   return {
     title: "Seus dois produtos",
-    highlight: "estão prontos.",
+    highlight: "estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o prontos.",
     description: "Escolha um produto abaixo para visualizar, baixar ou excluir.",
     buttonLabel: "Ver meus produtos",
   };
@@ -2093,10 +2264,10 @@ function ResultScreen({
               {isSavedResult ? "Produto salvo" : "Resultado"}
             </p>
             <h1 className="mt-4 text-4xl font-semibold leading-[1.06] text-[#F7F5EF] sm:text-5xl">
-              {result?.nomes[0] ?? "Seu produto está desenhado."}
+              {result?.nomes[0] ?? "Seu produto estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ desenhado."}
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-              A estratégia abaixo organiza produto, promessa, mercado e venda em blocos prontos para execução.
+              A estratÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©gia abaixo organiza produto, promessa, mercado e venda em blocos prontos para execuÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o.
             </p>
           </div>
           <div className="flex flex-col gap-3 lg:min-w-64">
@@ -2113,7 +2284,7 @@ function ResultScreen({
                 onClick={onRestart}
                 type="button"
               >
-                Recomeçar com outro produto
+                RecomeÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ar com outro produto
               </button>
             ) : null}
           </div>
@@ -2123,7 +2294,7 @@ function ResultScreen({
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <ResultSummaryCard label="Formato" value={formatProductFormatLabel(selectedFormat)} />
             <ResultSummaryCard label="Promessa" value={result.promessa} featured />
-            <ResultSummaryCard label="Preço" value={result.preco} />
+            <ResultSummaryCard label="PreÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§o" value={result.preco} />
           </div>
         ) : null}
       </div>
@@ -2131,10 +2302,10 @@ function ResultScreen({
       {error ? (
         <div className="rounded-[28px] border border-red-400/20 bg-red-500/10 p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-red-200">
-            Geração interrompida
+            GeraÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o interrompida
           </p>
           <h2 className="mt-3 text-2xl font-semibold text-[#F7F5EF]">
-            Não conseguimos gerar seu produto agora.
+            NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o conseguimos gerar seu produto agora.
           </h2>
           <p className="mt-3 text-sm leading-6 text-muted">{error}</p>
           <button
@@ -2152,7 +2323,7 @@ function ResultScreen({
           <aside className="hidden lg:block">
             <nav className="sticky top-6 rounded-[28px] border border-white/8 bg-surface p-4">
               <p className="px-3 pb-3 text-xs font-bold uppercase tracking-[0.16em] text-accent-light">
-                Estratégia
+                EstratÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©gia
               </p>
               <div className="space-y-1">
                 {resultBlocks.map((block, index) => (
@@ -2336,26 +2507,26 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
       content: result.oportunidade,
     },
     { eyebrow: "Nicho Validado", title: "Seu produto vai atender", content: result.nicho },
-    { eyebrow: "Ideia do Produto", title: "Seu produto será", content: result.ideia },
+    { eyebrow: "Ideia do Produto", title: "Seu produto serÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡", content: result.ideia },
     {
-      eyebrow: "Sugestões de Nome",
-      title: "Escolha um nome ou use como inspiração",
+      eyebrow: "SugestÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµes de Nome",
+      title: "Escolha um nome ou use como inspiraÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o",
       content: result.nomes,
     },
     { eyebrow: "A Promessa Principal", title: "O que seu produto promete", content: result.promessa },
     {
-      eyebrow: "Mecanismo Único",
+      eyebrow: "Mecanismo ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡nico",
       title: result.mecanismo.nome,
       content: result.mecanismo.explicacao,
     },
     {
-      eyebrow: "Benefícios que Você Pode Vender",
+      eyebrow: "BenefÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­cios que VocÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª Pode Vender",
       title: "Argumentos concretos para sua oferta",
       content: result.beneficios,
     },
     {
       eyebrow: "Perfis Ideais de Cliente",
-      title: "Recortes de público com maior potencial",
+      title: "Recortes de pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âºblico com maior potencial",
       content: result.perfis_clientes.map((profile) => `${profile.titulo}: ${profile.descricao}`),
     },
     {
@@ -2369,7 +2540,7 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
       content: result.estrutura,
     },
     {
-      eyebrow: "Objeções Principais",
+      eyebrow: "ObjeÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµes Principais",
       title: "O que o cliente pode pensar antes de comprar",
       content: result.objecoes.map(
         (objection) =>
@@ -2378,26 +2549,26 @@ function productResultToBlocks(result: ProductResult): ResultBlock[] {
     },
     {
       eyebrow: "Como Vender Esse Produto",
-      title: "Direção comercial simples",
+      title: "DireÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o comercial simples",
       content: [
-        `Ângulo principal: ${result.como_vender.angulo_principal}`,
+        `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ngulo principal: ${result.como_vender.angulo_principal}`,
         `Problema de entrada: ${result.como_vender.problema_de_entrada}`,
-        `Transformação destacada: ${result.como_vender.transformacao_destacada}`,
+        `TransformaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o destacada: ${result.como_vender.transformacao_destacada}`,
         `Prova recomendada: ${result.como_vender.prova_recomendada}`,
         `CTA recomendado: ${result.como_vender.cta_recomendado}`,
       ],
     },
-    { eyebrow: "Preço Sugerido", title: "Preço ideal para lançamento", content: result.preco },
-    { eyebrow: "Próximos Passos", title: "Seu produto está desenhado", content: result.proximo_passo },
+    { eyebrow: "PreÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§o Sugerido", title: "PreÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§o ideal para lanÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§amento", content: result.preco },
+    { eyebrow: "PrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³ximos Passos", title: "Seu produto estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ desenhado", content: result.proximo_passo },
     {
-      eyebrow: "Plano de Execução",
+      eyebrow: "Plano de ExecuÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o",
       title: "Checklist para tirar do papel",
       content: result.plano_execucao.map((group) => `${group.etapa}||${group.itens.join("||")}`),
       variant: "checklist",
     },
     {
       eyebrow: "Status do Projeto",
-      title: "O que já está pronto e o que vem agora",
+      title: "O que jÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ estÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ pronto e o que vem agora",
       content: result.status_projeto.map((item) => `${item.status}||${item.etapa}`),
       variant: "status",
     },

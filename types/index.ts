@@ -4,36 +4,56 @@ export type DiscoveryInput = {
   profile: string;
   targetAudienceDescription: string;
   regeneration?: {
-    stage: "audience" | "pain" | "transformation" | "format";
-    selectedAudience?: string;
-    selectedPain?: string;
-    selectedTransformation?: string;
     previousSuggestions: string[];
   };
 };
 
-export type StrategicRecommendation = {
-  titulo: string;
-  descricao: string;
-  porque: string;
-  tradeoff: string;
+export type ProductStrategy = {
+  nome: string;
+  resumo: string;
+  publico: string;
+  dor_principal: string;
+  transformacao: string;
+  justificativa: string;
+  tradeoffs: string;
+  recomendada: boolean;
 };
 
 export type DiscoveryResult = {
-  publicos: StrategicRecommendation[];
-  dores: Array<StrategicRecommendation & {
-    frases_reais: [string, string, string];
-  }>;
-  transformacoes: StrategicRecommendation[];
-  formatos: Array<StrategicRecommendation & {
-    nome: string;
-    tempo_medio: string;
-    dificuldade: string;
-    ticket_recomendado: string;
-    perfil_ideal: string;
-    potencial_escala: string;
-    avaliacao: number;
-  }>;
+  estrategias: [ProductStrategy, ProductStrategy, ProductStrategy];
+};
+
+export type ProductRecommendationInput = {
+  profile: string;
+  targetAudienceDescription: string;
+  selectedStrategy: ProductStrategy;
+  experienceLevel: string;
+  regeneration?: {
+    previousSuggestions: string[];
+  };
+};
+
+export type ProductRecommendation = {
+  nome: string;
+  big_idea: string;
+  promessa: string;
+  publico: string;
+  dor: string;
+  transformacao: string;
+  formato: string;
+  estrutura: string;
+  modulos: string[];
+  oferta: string;
+  ticket: string;
+  tempo_para_criar: string;
+  dificuldade: string;
+  resumo: string;
+  justificativa: string;
+  primeiros_passos: string[];
+};
+
+export type ProductRecommendationResult = {
+  produtos: [ProductRecommendation, ProductRecommendation];
 };
 
 export type FinalGenerationInput = {
@@ -44,6 +64,8 @@ export type FinalGenerationInput = {
   selectedTransformation: string;
   experienceLevel: string;
   selectedFormat: string;
+  selectedStrategy?: ProductStrategy;
+  selectedProduct?: ProductRecommendation;
 };
 
 export type ProductResult = {

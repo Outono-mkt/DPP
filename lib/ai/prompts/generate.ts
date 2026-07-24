@@ -57,6 +57,14 @@ FORMATO ESCOLHIDO
 
 ${input.selectedFormat}
 
+ESTRATEGIA ESCOLHIDA
+
+${formatSelectedStrategy(input)}
+
+PRODUTO ESCOLHIDO
+
+${formatSelectedProduct(input)}
+
 METODOLOGIA OBRIGATORIA DO FORMATO
 
 ${formatMethodology}
@@ -76,6 +84,12 @@ Nao escreva como relatorio empresarial.
 Nao resuma apenas o que o usuario disse.
 
 Tome decisoes.
+
+Preserve a logica da estrategia escolhida e do produto escolhido.
+
+Nao reinvente publico, dor, transformacao, formato ou produto quando eles ja foram definidos.
+
+Use o produto escolhido como base principal e aprofunde a estrategia final.
 
 Escolha o melhor posicionamento dentro das informacoes fornecidas.
 
@@ -228,4 +242,40 @@ Regras:
 - Nao use "Fale comigo" como CTA principal.
 - Use portugues do Brasil, linguagem concreta, sem respostas genericas.
 - Responda apenas com JSON. Sem texto adicional.`;
+}
+
+function formatSelectedStrategy(input: FinalGenerationInput) {
+  if (!input.selectedStrategy) {
+    return "Nao informada.";
+  }
+
+  return [
+    `Nome: ${input.selectedStrategy.nome}`,
+    `Publico: ${input.selectedStrategy.publico}`,
+    `Dor principal: ${input.selectedStrategy.dor_principal}`,
+    `Transformacao: ${input.selectedStrategy.transformacao}`,
+    `Justificativa: ${input.selectedStrategy.justificativa}`,
+    `Trade-offs: ${input.selectedStrategy.tradeoffs}`,
+  ].join("\n");
+}
+
+function formatSelectedProduct(input: FinalGenerationInput) {
+  if (!input.selectedProduct) {
+    return "Nao informado.";
+  }
+
+  return [
+    `Nome: ${input.selectedProduct.nome}`,
+    `Big idea: ${input.selectedProduct.big_idea}`,
+    `Promessa: ${input.selectedProduct.promessa}`,
+    `Formato: ${input.selectedProduct.formato}`,
+    `Estrutura: ${input.selectedProduct.estrutura}`,
+    `Modulos ou blocos: ${input.selectedProduct.modulos.join("; ")}`,
+    `Oferta: ${input.selectedProduct.oferta}`,
+    `Ticket: ${input.selectedProduct.ticket}`,
+    `Tempo para criar: ${input.selectedProduct.tempo_para_criar}`,
+    `Dificuldade: ${input.selectedProduct.dificuldade}`,
+    `Justificativa: ${input.selectedProduct.justificativa}`,
+    `Primeiros passos: ${input.selectedProduct.primeiros_passos.join("; ")}`,
+  ].join("\n");
 }

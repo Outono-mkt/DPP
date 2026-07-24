@@ -4,9 +4,17 @@ import {
   formatMethodologyForPrompt,
   getProductFormatMethodology,
 } from "@/lib/product-engine/helpers";
-import type { DiscoveryInput, DiscoveryResult, FinalGenerationInput, ProductResult } from "@/types";
+import type {
+  DiscoveryInput,
+  DiscoveryResult,
+  FinalGenerationInput,
+  ProductRecommendationInput,
+  ProductRecommendationResult,
+  ProductResult,
+} from "@/types";
 import { buildDiscoveryPrompt } from "./prompts/discovery";
 import { buildProductPrompt } from "./prompts/generate";
+import { buildProductRecommendationsPrompt } from "./prompts/recommend-products";
 import { PRODUCT_STRATEGY_SYSTEM_PROMPT } from "./prompts/system";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
@@ -70,6 +78,36 @@ export async function generateProductWithGemini(
   }
 
   return parseProductResult(text);
+}
+
+export async function generateProductRecommendationsWithGemini(
+  input: ProductRecommendationInput,
+): Promise<ProductRecommendationResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured.");
+  }
+
+  const response = await callGemini(
+    apiKey,
+    buildProductRecommendationsPrompt(input),
+    0.7,
+    PRODUCT_STRATEGY_SYSTEM_PROMPT,
+  );
+
+  if (!response.ok) {
+    throw new Error("Gemini product recommendations request failed.");
+  }
+
+  const payload = (await response.json()) as GeminiGenerateContentResponse;
+  const text = payload.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    throw new Error("Gemini returned an empty product recommendations response.");
+  }
+
+  return parseProductRecommendationResult(text);
 }
 
 export async function testGeminiConnection(): Promise<void> {
@@ -137,16 +175,25 @@ function parseDiscoveryResult(text: string): DiscoveryResult {
     throw new Error("Gemini discovery response is not valid JSON.");
   }
 
-  if (
-    !isObjectArray(parsed.publicos, 3, ["titulo", "descricao", "porque", "tradeoff"]) ||
-    !isPainArray(parsed.dores) ||
-    !isObjectArray(parsed.transformacoes, 3, ["titulo", "descricao", "porque", "tradeoff"]) ||
-    !isFormatArray(parsed.formatos)
-  ) {
+  if (!isStrategyArray(parsed.estrategias)) {
     throw new Error("Gemini discovery response does not match the expected schema.");
   }
 
   return parsed as DiscoveryResult;
+}
+
+function parseProductRecommendationResult(text: string): ProductRecommendationResult {
+  const parsed = parseJsonObject(text);
+
+  if (!parsed) {
+    throw new Error("Gemini product recommendations response is not valid JSON.");
+  }
+
+  if (!isProductRecommendationArray(parsed.produtos)) {
+    throw new Error("Gemini product recommendations response does not match the expected schema.");
+  }
+
+  return parsed as ProductRecommendationResult;
 }
 
 function parseProductResult(text: string): ProductResult {
@@ -244,7 +291,7 @@ function isStringObject(value: unknown, keys: string[]) {
   );
 }
 
-function isPainArray(value: unknown) {
+function isStrategyArray(value: unknown) {
   return (
     Array.isArray(value) &&
     value.length === 3 &&
@@ -253,40 +300,48 @@ function isPainArray(value: unknown) {
         return false;
       }
 
-      const pain = item as Record<string, unknown>;
+      const strategy = item as Record<string, unknown>;
       return (
-        typeof pain.titulo === "string" &&
-        typeof pain.descricao === "string" &&
-        typeof pain.porque === "string" &&
-        typeof pain.tradeoff === "string" &&
-        isThreeStringArray(pain.frases_reais)
+        typeof strategy.nome === "string" &&
+        typeof strategy.resumo === "string" &&
+        typeof strategy.publico === "string" &&
+        typeof strategy.dor_principal === "string" &&
+        typeof strategy.transformacao === "string" &&
+        typeof strategy.justificativa === "string" &&
+        typeof strategy.tradeoffs === "string" &&
+        typeof strategy.recomendada === "boolean"
       );
     })
   );
 }
 
-function isFormatArray(value: unknown) {
+function isProductRecommendationArray(value: unknown) {
   return (
     Array.isArray(value) &&
-    value.length === 3 &&
+    value.length === 2 &&
     value.every((item) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) {
         return false;
       }
 
-      const format = item as Record<string, unknown>;
+      const product = item as Record<string, unknown>;
       return (
-        typeof format.nome === "string" &&
-        typeof format.titulo === "string" &&
-        typeof format.descricao === "string" &&
-        typeof format.porque === "string" &&
-        typeof format.tradeoff === "string" &&
-        typeof format.tempo_medio === "string" &&
-        typeof format.dificuldade === "string" &&
-        typeof format.ticket_recomendado === "string" &&
-        typeof format.perfil_ideal === "string" &&
-        typeof format.potencial_escala === "string" &&
-        typeof format.avaliacao === "number"
+        typeof product.nome === "string" &&
+        typeof product.big_idea === "string" &&
+        typeof product.promessa === "string" &&
+        typeof product.publico === "string" &&
+        typeof product.dor === "string" &&
+        typeof product.transformacao === "string" &&
+        typeof product.formato === "string" &&
+        typeof product.estrutura === "string" &&
+        isStringArray(product.modulos) &&
+        typeof product.oferta === "string" &&
+        typeof product.ticket === "string" &&
+        typeof product.tempo_para_criar === "string" &&
+        typeof product.dificuldade === "string" &&
+        typeof product.resumo === "string" &&
+        typeof product.justificativa === "string" &&
+        isStringArray(product.primeiros_passos)
       );
     })
   );

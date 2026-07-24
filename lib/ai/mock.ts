@@ -1,134 +1,79 @@
 ﻿import "server-only";
 
-import type { DiscoveryResult, ProductResult } from "@/types";
+import type { DiscoveryResult, ProductRecommendationResult, ProductResult } from "@/types";
 
 export const mockDiscoveryResult: DiscoveryResult = {
-  publicos: [
+  estrategias: [
     {
-      titulo: "Profissionais autonomos com renda irregular",
-      descricao:
-        "Pessoas que prestam servicos, vendem por demanda ou recebem em datas diferentes todos os meses.",
-      porque:
-        "Eles sentem a dor da instabilidade todo mes e precisam de um metodo simples, nao de teoria financeira.",
-      tradeoff:
-        "Se escolher um publico amplo demais, a promessa fica fraca e parece mais uma dica financeira generica.",
+      nome: "Renda Clara para Autonomos",
+      resumo: "Organizar renda variavel com regras simples de decisao e separacao do dinheiro.",
+      publico: "Profissionais autonomos que recebem em datas diferentes e vivem com inseguranca financeira.",
+      dor_principal: "Nao saber quanto podem gastar, guardar ou retirar sem comprometer o mes seguinte.",
+      transformacao: "Sair da confusao mensal para uma rotina simples de previsibilidade financeira.",
+      justificativa: "E um publico com dor frequente, alta urgencia e aplicacao pratica imediata.",
+      tradeoffs: "Exige falar de dinheiro com clareza e evitar promessas exageradas de enriquecimento.",
+      recomendada: true,
     },
     {
-      titulo: "Prestadores de servico que misturam contas pessoais e profissionais",
-      descricao:
-        "Profissionais que recebem no CPF ou em uma unica conta e nao sabem separar custo, lucro e retirada.",
-      porque:
-        "Esse publico costuma trabalhar muito, mas perde clareza sobre lucro, custos e retirada.",
-      tradeoff:
-        "Exige exemplos de negocio e caixa, entao pode ser menos direto para quem quer falar de vida pessoal.",
+      nome: "Separacao Financeira do Prestador",
+      resumo: "Ajudar prestadores a separar dinheiro pessoal, custos e lucro sem planilhas complexas.",
+      publico: "Prestadores de servico que misturam contas pessoais e profissionais na mesma conta.",
+      dor_principal: "Achar que venderam bem, mas terminar o mes sem entender para onde o dinheiro foi.",
+      transformacao: "Criar uma separacao simples entre caixa, retirada, custos e reserva.",
+      justificativa: "A dor e concreta e a solucao pode ser entregue com exemplos e modelos simples.",
+      tradeoffs: "Funciona melhor para quem ja tem alguma entrada recorrente de servicos.",
+      recomendada: false,
     },
     {
-      titulo: "Pessoas endividadas que querem recomecar sem planilhas complexas",
-      descricao:
-        "Pessoas que ja tentaram se organizar, mas travam quando precisam lidar com numeros e prioridades.",
-      porque:
-        "A urgencia e alta e a promessa pode ser bem concreta: organizar, priorizar e agir.",
-      tradeoff:
-        "Pode atrair pessoas com menor poder de compra e exigir uma promessa mais cuidadosa.",
-    },
-  ],
-  dores: [
-    {
-      titulo: "Nao saber quanto pode gastar",
-      descricao:
-        "A pessoa vive apagando incendio porque nao tem uma regra clara para decidir o que entra, sai e fica guardado.",
-      porque: "Essa dor vende bem porque aparece toda vez que a pessoa precisa decidir se pode gastar ou guardar.",
-      tradeoff: "Se escolher uma dor mais ampla, a oferta perde urgencia e vira educacao financeira comum.",
-      frases_reais: [
-        "Eu recebo, pago umas coisas e quando vejo ja acabou.",
-        "Tenho medo de gastar e depois faltar para uma conta importante.",
-        "Nunca sei se posso comprar alguma coisa ou se estou me enganando.",
-      ],
-    },
-    {
-      titulo: "Medo dos meses fracos",
-      descricao:
-        "Quando a renda cai, tudo vira ansiedade porque nao existe reserva nem previsao minima.",
-      porque: "A inseguranca dos meses fracos e facil de reconhecer e cria desejo por previsibilidade.",
-      tradeoff: "Pode exigir falar de reserva e planejamento, o que assusta quem quer resultado imediato.",
-      frases_reais: [
-        "Quando entra menos cliente eu entro em desespero.",
-        "Um mes bom nao compensa a inseguranca do mes seguinte.",
-        "Eu queria saber quanto guardar quando recebo mais.",
-      ],
-    },
-    {
-      titulo: "Misturar dinheiro do trabalho com dinheiro pessoal",
-      descricao:
-        "Sem separar as contas, ela acha que vendeu bem, mas termina o mes sem saber para onde foi o dinheiro.",
-      porque: "Misturar contas mostra um erro concreto e permite vender uma solucao simples de separacao.",
-      tradeoff: "Funciona melhor para quem ja recebe como autonomo, nao para quem ainda esta comecando.",
-      frases_reais: [
-        "Eu nao sei se o dinheiro que entrou e meu ou do negocio.",
-        "As vezes acho que lucrei, mas depois aparece um custo que esqueci.",
-        "Uso a mesma conta para tudo e me perco completamente.",
-      ],
+      nome: "Primeira Reserva sem Planilha",
+      resumo: "Guiar pessoas a montar uma reserva inicial com tarefas simples e realistas.",
+      publico: "Pessoas com renda instavel que querem recomecar sem se perder em planilhas.",
+      dor_principal: "Sentir que nunca sobra dinheiro suficiente para criar uma reserva.",
+      transformacao: "Comecar uma reserva viavel sem cortar tudo nem depender de controle complexo.",
+      justificativa: "A promessa e desejavel, mas precisa ser cuidadosa para nao parecer milagre financeiro.",
+      tradeoffs: "Pode atrair um publico com menor poder de compra e exigir ticket inicial mais baixo.",
+      recomendada: false,
     },
   ],
-  transformacoes: [
+};
+
+export const mockProductRecommendationResult: ProductRecommendationResult = {
+  produtos: [
     {
-      titulo: "Clareza financeira em 7 dias",
-      descricao: "Organizar entradas, saidas e prioridades em uma rotina simples.",
-      porque: "Promete um ganho rapido e facil de visualizar: parar de decidir no escuro.",
-      tradeoff: "Se prometer algo maior, como enriquecer, a oferta perde credibilidade.",
-    },
-    {
-      titulo: "Plano simples para renda variavel",
-      descricao: "Criar uma regra de distribuicao do dinheiro que funcione mesmo com meses diferentes.",
-      porque: "A regra mensal vira um mecanismo claro para vender o produto.",
-      tradeoff: "Pode parecer menos emocional do que falar diretamente da ansiedade com dinheiro.",
-    },
-    {
-      titulo: "Primeira reserva sem sofrimento",
-      descricao: "Montar um plano realista para comecar uma reserva sem cortar tudo.",
-      porque: "Reserva e um desejo concreto para quem vive meses fortes e fracos.",
-      tradeoff: "A promessa pode parecer distante para quem ainda esta apagando incendio.",
-    },
-  ],
-  formatos: [
-    {
-      nome: "Curso gravado",
-      titulo: "Curso gravado",
-      descricao: "Aulas curtas para ensinar a regra financeira em uma ordem simples.",
-      porque: "Combina com passo a passo e pode vender continuamente sem depender da agenda.",
-      tradeoff: "Exige gravar e organizar aulas, entao demora mais do que um checklist ou ebook.",
-      tempo_medio: "6 horas de gravacao e 1 dia de organizacao.",
+      nome: "Renda Irregular, Vida Organizada",
+      big_idea: "Autonomos nao precisam de salario fixo para ter previsibilidade.",
+      promessa: "Organize sua renda variavel em 5 dias sem depender de planilhas complexas.",
+      publico: "Profissionais autonomos com entradas irregulares.",
+      dor: "Nao saber quanto gastar, guardar ou separar para custos.",
+      transformacao: "Criar uma regra simples para decidir o destino do dinheiro.",
+      formato: "Desafio",
+      estrutura: "Experiencia de 5 dias com uma tarefa objetiva por dia.",
+      modulos: ["Diagnostico da renda", "Separacao simples", "Plano dos proximos 30 dias"],
+      oferta: "Desafio pratico com aulas curtas, checklist e modelo de decisao financeira.",
+      ticket: "R$47 a R$97",
+      tempo_para_criar: "2 a 3 dias",
       dificuldade: "Media",
-      ticket_recomendado: "R$197 a R$497",
-      perfil_ideal: "Quem quer vender no automatico depois da primeira versao.",
-      potencial_escala: "Alto",
-      avaliacao: 4,
+      resumo: "Um desafio curto para entregar clareza financeira rapidamente.",
+      justificativa: "Combina urgencia, promessa concreta e execucao simples para primeira venda.",
+      primeiros_passos: ["Definir promessa", "Roteirizar 5 tarefas", "Montar checklist de aplicacao"],
     },
     {
-      nome: "Ebook",
-      titulo: "Ebook",
-      descricao: "Um guia pratico com exemplos e checklist para aplicar em poucos dias.",
-      porque: "E rapido de produzir e funciona bem como primeira oferta de baixo risco.",
-      tradeoff: "Tem menos valor percebido que uma experiencia guiada em video.",
-      tempo_medio: "1 a 2 dias de escrita e revisao.",
+      nome: "Mapa do Dinheiro Autonomo",
+      big_idea: "Uma regra visual vale mais que uma planilha abandonada.",
+      promessa: "Separe custos, retirada e reserva com um mapa financeiro simples.",
+      publico: "Prestadores de servico que misturam dinheiro pessoal e profissional.",
+      dor: "Nao saber se o negocio esta dando lucro de verdade.",
+      transformacao: "Enxergar o dinheiro com clareza e separar cada finalidade.",
+      formato: "Ebook",
+      estrutura: "Guia pratico com exemplos, modelos e checklist.",
+      modulos: ["Mapa inicial", "Regra de separacao", "Rotina semanal"],
+      oferta: "Ebook direto com modelos preenchidos e checklist de decisao.",
+      ticket: "R$37 a R$67",
+      tempo_para_criar: "1 a 2 dias",
       dificuldade: "Baixa",
-      ticket_recomendado: "R$37 a R$97",
-      perfil_ideal: "Quem quer validar rapido antes de gravar aulas.",
-      potencial_escala: "Medio",
-      avaliacao: 3,
-    },
-    {
-      nome: "Desafio",
-      titulo: "Desafio",
-      descricao: "Uma experiencia de 5 dias com tarefas simples para organizar a renda variavel.",
-      porque: "Cria movimento, urgencia e sensacao de progresso todos os dias.",
-      tradeoff: "Precisa de comunicacao mais ativa para manter o aluno executando.",
-      tempo_medio: "1 dia para roteiro e 5 aulas curtas.",
-      dificuldade: "Media",
-      ticket_recomendado: "R$47 a R$197",
-      perfil_ideal: "Quem quer entregar resultado rapido e vender com prazo.",
-      potencial_escala: "Alto",
-      avaliacao: 5,
+      resumo: "Um guia rapido para validar o tema com baixo custo de producao.",
+      justificativa: "E mais simples de produzir e vender como primeira oferta.",
+      primeiros_passos: ["Escrever sumario", "Criar exemplos", "Montar modelo de separacao"],
     },
   ],
 };

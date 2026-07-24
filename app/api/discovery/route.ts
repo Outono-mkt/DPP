@@ -49,11 +49,8 @@ function isValidRegeneration(value: unknown) {
   }
 
   const regeneration = value as NonNullable<DiscoveryInput["regeneration"]>;
-  const validStages = ["audience", "pain", "transformation", "format"];
 
   return (
-    Boolean(regeneration) &&
-    validStages.includes(regeneration.stage) &&
     Array.isArray(regeneration.previousSuggestions) &&
     regeneration.previousSuggestions.every((item) => typeof item === "string")
   );
