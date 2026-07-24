@@ -6,6 +6,7 @@ import type { LibraryMaterial } from "../data/materiais";
 import { dayGroups, priorityLabels, typeLabels } from "../data/materiais";
 
 const actionLabels: Record<LibraryMaterial["tipo"], string> = {
+  checklist: "Abrir Checklist",
   link: "Acessar Produto Pronto",
   prompt: "Ver prompt",
   skill: "Baixar Skill",
